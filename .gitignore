@@ -1,0 +1,6 @@
+# Local renders of the template
+rendered/
+.build/
+__pycache__/
+.pytest_cache/
+*~

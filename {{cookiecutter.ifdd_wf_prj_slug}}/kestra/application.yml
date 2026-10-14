@@ -1,0 +1,55 @@
+# Kestra configuration of {{ cookiecutter.ifdd_wf_prj_name }}.
+#
+# Mounted read-only at /etc/kestra/application.yml. ${...} are resolved by
+# Kestra (Micronaut) from the container environment, which the compose files
+# fill from .env by name. No secret is written into this file.
+
+datasources:
+  postgres:
+    url: jdbc:postgresql://postgres:5432/kestra
+    driver-class-name: org.postgresql.Driver
+    username: kestra
+    password: ${IFDD_WF_DB_PASSWORD}
+
+kestra:
+  # Public URL including the path; Kestra builds links in notifications from it.
+  url: ${IFDD_WF_URL}
+
+  server:
+    # Required in the open-source edition (since 0.24). The values here take
+    # precedence over anything set through the setup page.
+    basic-auth:
+      username: ${IFDD_WF_ADMIN_USER}
+      password: ${IFDD_WF_ADMIN_PASSWORD}
+
+  encryption:
+    secret-key: ${IFDD_WF_ENCRYPTION_KEY}
+
+  repository:
+    type: postgres
+  queue:
+    type: postgres
+  storage:
+    type: local
+    local:
+      base-path: /app/storage
+
+  tasks:
+    # Shared with the Docker-in-Docker daemon at the same path, so the task
+    # runner's file handling works in both modes.
+    tmp-dir:
+      path: /tmp/kestra-wd/tmp
+
+  plugins:
+    configurations:
+      - type: io.kestra.plugin.scripts.runner.docker.Docker
+        values:
+          # Lets flows mount volumes into task containers. With
+          # Docker-in-Docker the paths are those of the DinD container, with
+          # the host socket they are paths ON THE HOST.
+          volume-enabled: {{ "true" if cookiecutter.ifdd_wf_docker_volume_enabled == "y" else "false" }}
+
+  tutorial-flows:
+    enabled: false
+  anonymous-usage-report:
+    enabled: false

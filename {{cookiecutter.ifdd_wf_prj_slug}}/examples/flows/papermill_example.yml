@@ -1,0 +1,29 @@
+# Runs a Jupyter notebook with papermill in the local runner image.
+#
+# The notebook is a namespace file: upload examples/notebooks/example.ipynb
+# in the UI (Namespaces -> ifdd.examples -> Files) as notebooks/example.ipynb.
+# The executed notebook (with outputs) is kept as output file of the task.
+id: papermill_example
+namespace: ifdd.examples
+
+inputs:
+  - id: name
+    type: STRING
+    defaults: Kestra
+
+tasks:
+  - id: notebook
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+      include:
+        - notebooks/example.ipynb
+    # Built locally by adm_01_build.sh, never pulled from a registry.
+    containerImage: "{{ envs.runner_papermill_image }}"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+    commands:
+      - papermill notebooks/example.ipynb executed.ipynb -k python3 -p name "{{ inputs.name }}"
+    outputFiles:
+      - executed.ipynb

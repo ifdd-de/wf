@@ -1,0 +1,12 @@
+# Every switch flipped: host socket, own host name, no SSO,
+# no volume mounts in task containers.
+default_context:
+  ifdd_wf_prj_name: Grid WF
+  ifdd_wf_host: wf.example.org
+  ifdd_wf_entrypoint: websecure
+  ifdd_wf_dev_port: "8096"
+  ifdd_wf_admin_email: ops@example.org
+  ifdd_wf_docker_mode: socket
+  ifdd_wf_docker_volume_enabled: "n"
+  ifdd_wf_enable_sso: "n"
+  ifdd_proxy_network: edge-net

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Generated files are not committed; create stand-ins
+        run: |
+          python3 - <<'PY'
+          import base64, os, re, secrets
+          from pathlib import Path
+          def gen(m):
+              kind, n = m.group(1), int(m.group(2))
+              if kind == "chars":
+                  return "Aa1" + secrets.token_hex(n)[: n - 3]
+              raw = os.urandom(n)
+              return base64.b64encode(raw).decode() if kind == "base64" else raw.hex()
+          pat = re.compile(r"<<generate:(chars|base64|hex):(\d+)(?::[aA0-]+)?>>")
+          Path(".env").write_text(pat.sub(gen, Path("dotenv.dist").read_text()))
+          Path("secrets/kestra.env").write_text(Path("secrets/kestra.env.dist").read_text())
+          PY
+
+      - name: Static checks
+        run: |
+          pip install -r tests/requirements.txt
+          pytest -q tests
+
+      - name: Compose files are valid
+        run: |
+          docker compose -f docker-compose-production.yml config --quiet
+          docker compose -f docker-compose-development.yml config --quiet

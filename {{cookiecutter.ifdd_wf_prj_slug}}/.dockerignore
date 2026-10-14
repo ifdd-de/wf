@@ -1,0 +1,7 @@
+# Build context of all images is the instance root; only these are needed.
+*
+!build/
+!certs/
+!kestra/
+!dind/
+!runners/

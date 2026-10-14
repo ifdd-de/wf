@@ -1,0 +1,30 @@
+{
+  "ifdd_wf_prj_name": "IFDD WF",
+  "ifdd_wf_prj_slug": "{{ cookiecutter.ifdd_wf_prj_name|lower|replace(' ', '-') }}",
+  "ifdd_wf_host": "wf",
+  "ifdd_wf_entrypoint": "websecure",
+  "ifdd_wf_dev_port": "8095",
+  "ifdd_wf_admin_email": "admin@example.org",
+  "ifdd_wf_kestra_image": "kestra/kestra:v2.0.4",
+  "ifdd_wf_postgres_image": "postgres:18",
+  "ifdd_wf_docker_mode": [
+    "dind",
+    "socket"
+  ],
+  "ifdd_wf_dind_image": "docker:29.8.2-dind",
+  "ifdd_wf_runner_python_image": "python:3.13-slim",
+  "ifdd_wf_docker_volume_enabled": "y",
+  "ifdd_wf_enable_sso": "y",
+  "ifdd_wf_sso_group": "ifdd_wf_admins",
+  "ifdd_wf_sso_auth_address": "http://oauth2-proxy:4180",
+  "ifdd_wf_sso_service": "oauth2-proxy@docker",
+  "ifdd_proxy_network": "proxy-net",
+  "ifdd_be_url": "https://be.example.org",
+  "ifdd_oidc_realm": "https://keycloak.example.org/realms/ifdd",
+  "ifdd_keycloak_api_client_id": "ifdd-api-script",
+  "_copy_without_render": [
+    ".github",
+    "tests",
+    "examples"
+  ]
+}

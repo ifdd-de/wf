@@ -1,0 +1,15 @@
+# Generated per instance, contain secrets.
+.env
+secrets/*
+!secrets/README.md
+!secrets/kestra.env.dist
+
+# Internal CA certificates, copied in by the meta repository.
+certs/*
+!certs/README.md
+
+__pycache__/
+.pytest_cache/
+
+# Local builds of the documentation (docs/en, docs/de)
+docs/_build/

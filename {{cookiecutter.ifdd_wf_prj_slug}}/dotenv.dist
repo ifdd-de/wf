@@ -1,0 +1,33 @@
+# Values for docker compose interpolation (the ${...} in the compose files).
+# The compose files hand each container only what it needs, by name.
+# Flow secrets and flow variables are not kept here but in secrets/kestra.env.
+#
+# Values written as <<generate:...>> are replaced by random values when the
+# instance is generated (hooks/post_gen_project.py). Their form states the
+# required quality, e.g. <<generate:chars:32:aA0>> = 32 characters with at
+# least one lowercase letter, one uppercase letter and one digit.
+
+# Host name under which the proxy routes to Kestra
+# (https://<IFDD_WF_HOST>/).
+IFDD_WF_HOST={{ cookiecutter.ifdd_wf_host }}
+
+# Port on 127.0.0.1 for local development (docker-compose-development.yml).
+IFDD_WF_DEV_PORT={{ cookiecutter.ifdd_wf_dev_port }}
+
+# Kestra's own login (basic authentication, required in the open-source
+# edition). Kestra demands an email address as user name and a password of at
+# least 8 characters with a lowercase letter, an uppercase letter and a digit.
+IFDD_WF_ADMIN_USER={{ cookiecutter.ifdd_wf_admin_email }}
+IFDD_WF_ADMIN_PASSWORD=<<generate:chars:32:aA0>>
+
+# PostgreSQL password of the user kestra. Set once: the database keeps the
+# password it was created with; changing it here alone locks Kestra out.
+IFDD_WF_DB_PASSWORD=<<generate:chars:40:aA0>>
+
+# AES key for SECRET inputs and outputs (base64 of 32 random bytes).
+# Changing it makes values encrypted with the old key unreadable.
+IFDD_WF_ENCRYPTION_KEY=<<generate:base64:32>>
+
+# Tag of the locally built papermill runner image (runners/papermill).
+# Flows read it as {% raw %}{{ envs.runner_papermill_image }}{% endraw %}.
+IFDD_WF_RUNNER_PAPERMILL_IMAGE={{ cookiecutter.ifdd_wf_prj_slug }}-papermill:local

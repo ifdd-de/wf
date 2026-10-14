@@ -1,0 +1,38 @@
+# Kestra -> Git: pushes the flows and namespace files of the listed namespaces
+# (and their child namespaces) to the content repository. Kestra is the
+# source of truth; changes in Git are NOT pulled back.
+#
+# Import once (UI: Flows -> Create, or the API) after setting in
+# secrets/kestra.env: SECRET_GIT_TOKEN, ENV_GIT_URL, ENV_GIT_USERNAME,
+# ENV_GIT_BRANCH. The branch must exist in the repository.
+#
+# Layout in Git: <namespace>/flows/<flow>.yaml and <namespace>/files/<path>.
+id: git_sync
+namespace: system
+description: Push flows and namespace files from Kestra to the content repository.
+
+tasks:
+  - id: namespaces
+    type: io.kestra.plugin.core.flow.Loop
+    # ADJUST: the root namespaces of your flows.
+    values: ["ifdd"]
+    tasks:
+      - id: sync
+        type: io.kestra.plugin.git.NamespaceSync
+        namespace: "{{ item.value }}"
+        includeChildNamespaces: true
+        sourceOfTruth: KESTRA
+        # KEEP: a flow deleted in Kestra stays in Git. DELETE removes it from
+        # Git as well (still recoverable from the Git history).
+        whenMissingInSource: KEEP
+        protectedNamespaces:
+          - system
+        url: "{{ envs.git_url }}"
+        username: "{{ envs.git_username }}"
+        password: "{{ secret('GIT_TOKEN') }}"
+        branch: "{{ envs.git_branch }}"
+
+triggers:
+  - id: hourly
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 * * * *"

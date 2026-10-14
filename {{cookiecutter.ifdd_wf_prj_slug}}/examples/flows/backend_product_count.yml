@@ -1,0 +1,47 @@
+# Counts the documents of one ifdd-be collection (default: products) with the
+# notebook notebooks/backend_product_count.ipynb: a demo of a notebook that
+# calls the backend. The executed notebook and count.json are kept as output
+# files of the task.
+#
+# Before the first run (see README, "Backend example"):
+#   - Upload examples/notebooks/backend_product_count.ipynb in the UI
+#     (Namespaces -> ifdd.examples -> Files) as
+#     notebooks/backend_product_count.ipynb.
+#   - secrets/kestra.env holds the ENV_IFDD_* values and
+#     SECRET_IFDD_API_CLIENT_SECRET; restart Kestra after changing it.
+id: backend_product_count
+namespace: ifdd.examples
+
+inputs:
+  - id: segment
+    type: STRING
+    defaults: products
+    description: Path segment of the collection in ifdd-be (products, functions, ...)
+
+tasks:
+  - id: count
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+      include:
+        - notebooks/backend_product_count.ipynb
+    # Built locally by adm_01_build.sh, never pulled from a registry.
+    containerImage: "{{ envs.runner_papermill_image }}"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      # A network on which https://rest and https://id resolve: "host" with
+      # Docker-in-Docker, the proxy network with the host socket.
+      networkMode: "{{ envs.task_network }}"
+    # Read by the notebook. The secret goes in as an environment variable
+    # only: papermill writes parameters into the executed notebook.
+    env:
+      IFDD_BE_URL: "{{ envs.ifdd_be_url }}"
+      IFDD_OIDC_TOKEN_URL: "{{ envs.ifdd_oidc_token_url }}"
+      IFDD_API_CLIENT_ID: "{{ envs.ifdd_api_client_id }}"
+      IFDD_API_CLIENT_SECRET: "{{ secret('IFDD_API_CLIENT_SECRET') }}"
+    commands:
+      - papermill notebooks/backend_product_count.ipynb executed.ipynb -k python3 -p segment "{{ inputs.segment }}"
+    outputFiles:
+      - executed.ipynb
+      - count.json

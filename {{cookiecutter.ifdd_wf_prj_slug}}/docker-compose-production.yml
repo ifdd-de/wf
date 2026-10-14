@@ -1,0 +1,172 @@
+{%- set dind = cookiecutter.ifdd_wf_docker_mode == "dind" -%}
+{%- set sso = cookiecutter.ifdd_wf_enable_sso == "y" -%}
+{%- set slug = cookiecutter.ifdd_wf_prj_slug -%}
+# Production: Kestra behind the IFDD proxy (ifdd-de/proxy) at
+# https://${IFDD_WF_HOST}/
+{%- if sso %}
+# Access: forward authentication through oauth2-proxy (Keycloak group
+# {{ cookiecutter.ifdd_wf_sso_group }}), then Kestra's own login.
+{%- endif %}
+#
+# Start with ./adm_02_run.sh production (loads the runner images first).
+
+services:
+  postgres:
+    image: "{{ cookiecutter.ifdd_wf_postgres_image }}"
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: "${IFDD_WF_DB_PASSWORD:?set in .env}"
+    volumes:
+      # From PostgreSQL 18 on, the image keeps its data in a versioned
+      # subdirectory of /var/lib/postgresql.
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d kestra -U kestra"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - "no-new-privileges:true"
+    restart: always
+{%- if dind %}
+
+  dind:
+    build:
+      context: .
+      dockerfile: dind/Dockerfile
+      args:
+        DIND_IMAGE: "{{ cookiecutter.ifdd_wf_dind_image }}"
+    image: "{{ slug }}-dind:local"
+    # Required by Docker-in-Docker. This container is root on the host's
+    # kernel; it is what keeps the host's own Docker daemon out of reach.
+    privileged: true
+    # Only the unix socket in the shared volume; without arguments the
+    # upstream entrypoint would also open TCP port 2375.
+    command: ["dockerd", "--host=unix:///dind/docker.sock"]
+    environment:
+      DOCKER_HOST: "unix:///dind/docker.sock"
+    volumes:
+      - dind-socket:/dind
+      - dind-data:/var/lib/docker
+      - kestra-wd:/tmp/kestra-wd
+    # proxy: task containers with networkMode "host" share this network and
+    # reach the other services by their names (https://rest, https://id).
+    networks:
+      - default
+      - proxy
+    healthcheck:
+      test: ["CMD", "docker", "info", "--format", "{{ '{{' }}.ServerVersion{{ '}}' }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: always
+{%- endif %}
+
+  kestra:
+    build:
+      context: .
+      dockerfile: kestra/Dockerfile
+      args:
+        KESTRA_IMAGE: "{{ cookiecutter.ifdd_wf_kestra_image }}"
+    image: "{{ slug }}-kestra:local"
+    # Root: needed for the Docker socket (both modes); see README.
+    user: "root"
+    command: ["server", "standalone", "--config", "/etc/kestra/application.yml"]
+    # Kestra waits up to 5 minutes for running tasks on shutdown.
+    stop_grace_period: 6m
+    # Management port 8081 (/health), reached inside the container only; it
+    # is never published. The image has curl but neither wget nor bash.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8081/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # Kestra loads its plugins at startup.
+      start_period: 120s
+    # Flow secrets (SECRET_*) and flow variables (ENV_*) only.
+    env_file:
+      - secrets/kestra.env
+    environment:
+      IFDD_WF_URL: "https://${IFDD_WF_HOST:?set in .env}/"
+      IFDD_WF_ADMIN_USER: "${IFDD_WF_ADMIN_USER:?set in .env}"
+      IFDD_WF_ADMIN_PASSWORD: "${IFDD_WF_ADMIN_PASSWORD:?set in .env}"
+      IFDD_WF_DB_PASSWORD: "${IFDD_WF_DB_PASSWORD:?set in .env}"
+      IFDD_WF_ENCRYPTION_KEY: "${IFDD_WF_ENCRYPTION_KEY:?set in .env}"
+      ENV_RUNNER_PAPERMILL_IMAGE: "${IFDD_WF_RUNNER_PAPERMILL_IMAGE:?set in .env}"
+    volumes:
+      - "./kestra/application.yml:/etc/kestra/application.yml:ro"
+      - kestra-storage:/app/storage
+      - kestra-wd:/tmp/kestra-wd
+{%- if dind %}
+      # The Docker task runner falls back to unix:///dind/docker.sock when
+      # /var/run/docker.sock does not exist (Kestra 2.0.4).
+      - dind-socket:/dind
+{%- else %}
+      # Full control of the host's Docker daemon = root on the host.
+      - "/var/run/docker.sock:/var/run/docker.sock"
+{%- endif %}
+    networks:
+      - default
+      - db
+      - proxy
+    # No ports: 8080 is reached through the proxy only, the management port
+    # 8081 (unauthenticated) is not published at all.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network={{ cookiecutter.ifdd_proxy_network }}"
+      - "traefik.http.routers.{{ slug }}.rule=Host(`${IFDD_WF_HOST}`)"
+      - "traefik.http.routers.{{ slug }}.entrypoints={{ cookiecutter.ifdd_wf_entrypoint }}"
+      - "traefik.http.routers.{{ slug }}.service={{ slug }}"
+      - "traefik.http.services.{{ slug }}.loadbalancer.server.port=8080"
+{%- if sso %}
+      # Every request is checked by oauth2-proxy; only members of the Keycloak
+      # group get through. Unauthenticated browsers are sent to Keycloak.
+      - "traefik.http.middlewares.{{ slug }}-sso.forwardauth.address={{ cookiecutter.ifdd_wf_sso_auth_address }}/?allowed_groups={{ cookiecutter.ifdd_wf_sso_group }}"
+      - "traefik.http.middlewares.{{ slug }}-sso.forwardauth.trustForwardHeader=true"
+      - "traefik.http.routers.{{ slug }}.middlewares={{ slug }}-sso"
+      # Login callback and sign-out of oauth2-proxy on this host.
+      - "traefik.http.routers.{{ slug }}-oauth2.rule=Host(`${IFDD_WF_HOST}`) && PathPrefix(`/oauth2/`)"
+      - "traefik.http.routers.{{ slug }}-oauth2.entrypoints={{ cookiecutter.ifdd_wf_entrypoint }}"
+      - "traefik.http.routers.{{ slug }}-oauth2.service={{ cookiecutter.ifdd_wf_sso_service }}"
+{%- endif %}
+    depends_on:
+      postgres:
+        condition: service_healthy
+{%- if dind %}
+      dind:
+        condition: service_healthy
+{%- endif %}
+    security_opt:
+      - "no-new-privileges:true"
+    restart: always
+
+  # Not started by `up`: built by adm_01_build.sh (profile "runners").
+  runner-papermill:
+    profiles: ["runners"]
+    build:
+      context: .
+      dockerfile: runners/papermill/Dockerfile
+      args:
+        PYTHON_IMAGE: "{{ cookiecutter.ifdd_wf_runner_python_image }}"
+    image: "${IFDD_WF_RUNNER_PAPERMILL_IMAGE:?set in .env}"
+
+volumes:
+  postgres-data:
+  kestra-storage:
+  kestra-wd:
+{%- if dind %}
+  dind-socket:
+  dind-data:
+{%- endif %}
+
+networks:
+  default:
+  db:
+    # PostgreSQL only; no route outside.
+    internal: true
+  proxy:
+    name: {{ cookiecutter.ifdd_proxy_network }}
+    external: true

@@ -1,0 +1,65 @@
+name: Template
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Render and check (${{ matrix.fixture }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: [defaults, socket-root-nosso]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: template
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install tooling
+        run: pip install cookiecutter pytest pyyaml
+
+      - name: Render
+        run: |
+          cookiecutter --no-input --config-file template/tests/fixtures/${{ matrix.fixture }}.yaml \
+            --output-dir rendered template
+          INSTANCE=$(find rendered -mindepth 1 -maxdepth 1 -type d | head -1)
+          echo "INSTANCE=$INSTANCE" >> "$GITHUB_ENV"
+
+      - name: The rendered instance must contain no template placeholders
+        run: |
+          if grep -rl "cookiecutter\." "$INSTANCE"; then
+            echo "Unrendered placeholders found" >&2
+            exit 1
+          fi
+
+      - name: Static checks
+        working-directory: ${{ env.INSTANCE }}
+        run: pytest -q tests
+
+      - name: Documentation (docs/en, docs/de) matches and builds
+        run: |
+          pip install -r template/tests/docs/requirements.txt
+          python template/tests/check_docs.py "$INSTANCE" --prefix ifdd-wf-
+
+      - name: Compose files are valid
+        working-directory: ${{ env.INSTANCE }}
+        # Building the images and starting the stack is not part of CI yet.
+        run: |
+          docker compose -f docker-compose-production.yml config --quiet
+          docker compose -f docker-compose-development.yml config --quiet

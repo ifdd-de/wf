@@ -1,0 +1,10 @@
+# Packages of the papermill runner image. Pinned.
+#
+# 26.10.1: papermill and ipykernel plus the same packages as the Kestra image
+# (kestra/requirements.txt), so notebooks see the same libraries as Process
+# tasks. Add what your notebooks import; rebuild with ./adm_01_build.sh.
+papermill==2.7.0
+ipykernel==7.4.0
+pandas==3.0.6
+requests==2.34.2
+SQLAlchemy==2.0.54

@@ -1,0 +1,9 @@
+# Python packages for flows that run with the Process task runner, i.e. inside
+# the Kestra container. Pinned; adjust to what your flows were written for.
+#
+# PROVISIONAL PINS (26.10.1): the previous instance installed these packages
+# unpinned. Compare with `docker exec <old-kestra-container> pip freeze` before
+# going live. pandas 3.0 (January 2026) changed defaults compared to 2.x.
+pandas==3.0.6
+requests==2.34.2
+SQLAlchemy==2.0.54
