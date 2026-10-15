@@ -20,14 +20,6 @@ updates:
   - package-ecosystem: "pip"
     directories:
       - "/*cookiecutter.ifdd_wf_prj_slug*/kestra"
-    schedule:
-      interval: "monthly"
-    groups:
-      minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-  - package-ecosystem: "pip"
-    directories:
       - "/*cookiecutter.ifdd_wf_prj_slug*/runners/papermill"
     schedule:
       interval: "monthly"
