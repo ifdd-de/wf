@@ -1,0 +1,35 @@
+# Dependabot version updates for wf.
+# Security updates are a repository setting and do not depend on this file.
+#
+# Not covered on purpose:
+# - image versions in cookiecutter.json (rendered into the compose files);
+# - tests/docs/requirements.txt (pinned together for the docs check);
+# - workflows of the rendered instance ({{cookiecutter.ifdd_wf_prj_slug}}/.github/workflows):
+#   not yet verified that Dependabot scans them there.
+# - the Dockerfiles: their base images are build arguments from compose.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: "pip"
+    directory: "/{{cookiecutter.ifdd_wf_prj_slug}}/kestra"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directory: "/{{cookiecutter.ifdd_wf_prj_slug}}/runners/papermill"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
