@@ -6,4 +6,4 @@
 # going live. pandas 3.0 (January 2026) changed defaults compared to 2.x.
 pandas==3.0.6
 requests==2.34.2
-SQLAlchemy==2.0.54
+SQLAlchemy==2.1.4
