@@ -30,11 +30,11 @@ generated secrets and the certificates out of every later `cruft update`.
 | `ifdd_wf_entrypoint` | `websecure` | Traefik entry point of the routers |
 | `ifdd_wf_dev_port` | `8095` | loopback port of the development compose file |
 | `ifdd_wf_admin_email` | `admin@example.org` | user name of Kestra's basic authentication (Kestra requires an email address) |
-| `ifdd_wf_kestra_image` | `kestra/kestra:v2.0.4` | upstream image (full image, with plugins) |
+| `ifdd_wf_kestra_image` | `kestra/kestra:v2.0.8` | upstream image (full image, with plugins) |
 | `ifdd_wf_postgres_image` | `postgres:18` | database image |
 | `ifdd_wf_docker_mode` | `dind` | `dind`: own privileged Docker daemon, socket shared by volume, no TCP; `socket`: host's `/var/run/docker.sock` |
-| `ifdd_wf_dind_image` | `docker:29.8.2-dind` | DinD image |
-| `ifdd_wf_runner_python_image` | `python:3.13-slim` | base of the papermill runner image |
+| `ifdd_wf_dind_image` | `docker:29.9.2-dind` | DinD image |
+| `ifdd_wf_runner_python_image` | `python:3.14-slim` | base of the papermill runner image |
 | `ifdd_wf_docker_volume_enabled` | `y` | lets flows mount volumes into task containers |
 | `ifdd_wf_enable_sso` | `y` | forward authentication through oauth2-proxy of `ifdd-de/proxy` |
 | `ifdd_wf_sso_group` | `ifdd_wf_admins` | Keycloak group that may pass |

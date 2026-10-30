@@ -5,14 +5,14 @@
   "ifdd_wf_entrypoint": "websecure",
   "ifdd_wf_dev_port": "8095",
   "ifdd_wf_admin_email": "admin@example.org",
-  "ifdd_wf_kestra_image": "kestra/kestra:v2.0.4",
+  "ifdd_wf_kestra_image": "kestra/kestra:v2.0.8",
   "ifdd_wf_postgres_image": "postgres:18",
   "ifdd_wf_docker_mode": [
     "dind",
     "socket"
   ],
-  "ifdd_wf_dind_image": "docker:29.8.2-dind",
-  "ifdd_wf_runner_python_image": "python:3.13-slim",
+  "ifdd_wf_dind_image": "docker:29.9.2-dind",
+  "ifdd_wf_runner_python_image": "python:3.14-slim",
   "ifdd_wf_docker_volume_enabled": "y",
   "ifdd_wf_enable_sso": "y",
   "ifdd_wf_sso_group": "ifdd_wf_admins",
