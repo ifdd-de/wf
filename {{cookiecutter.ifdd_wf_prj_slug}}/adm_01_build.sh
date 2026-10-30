@@ -17,5 +17,5 @@ certs=$(find certs -maxdepth 1 -type f \( -name '*.crt' -o -name '*.pem' \) | wc
 echo "CA certificates in certs/: $certs"
 
 # --pull: fetch the pinned base images again, so security fixes of a moving
-# base (e.g. python:3.13-slim) are picked up.
+# base (e.g. python:3.14-slim) are picked up.
 "${COMPOSE[@]}" --profile runners build --pull
