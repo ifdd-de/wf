@@ -39,7 +39,8 @@ generated secrets and the certificates out of every later `cruft update`.
 | `ifdd_wf_enable_sso` | `y` | forward authentication through oauth2-proxy of `ifdd-de/proxy` |
 | `ifdd_wf_sso_group` | `ifdd_wf_admins` | Keycloak group that may pass |
 | `ifdd_wf_sso_auth_address` | `http://oauth2-proxy:4180` | oauth2-proxy as seen from Traefik |
-| `ifdd_wf_sso_service` | `oauth2-proxy@docker` | Traefik service of oauth2-proxy (login callback) |
+| `ifdd_proxy_oauth2_proxy_service` | `ifdd_proxy-oauth2-proxy` | **shared** with `ifdd-de/proxy`: its Traefik service of oauth2-proxy, without `@docker`; the router of the login callback names `<value>@docker`. The default is the name of a proxy with the default project name |
+| `ifdd_wf_sso_service` | `oauth2-proxy@docker` | deprecated: a value other than this default still names the service of the login callback (the pre-generation hook warns); leave the default and set `ifdd_proxy_oauth2_proxy_service` |
 | `ifdd_proxy_network` | `proxy-net` | external network of the proxy |
 | `ifdd_be_url` | `https://be.example.org` | ifdd-be for flows and notebooks (`ENV_IFDD_BE_URL` in `secrets/kestra.env`) |
 | `ifdd_oidc_realm` | `https://keycloak.example.org/realms/ifdd` | realm URL; its token endpoint becomes `ENV_IFDD_OIDC_TOKEN_URL` |
@@ -94,8 +95,9 @@ this template) and a Keycloak client; see the proxy README, "oauth2-proxy".
 
 - `template-test.yml`: renders every fixture in `tests/fixtures/`, checks
   for leftover placeholders, runs the instance's static tests, checks and
-  builds the documentation (`tests/check_docs.py`) and validates both
-  compose files.
+  builds the documentation (`tests/check_docs.py`), checks that the router
+  of the login callback names the service of the proxy
+  (`tests/check_sso_service.py`) and validates both compose files.
 - `template-update-test.yml`: generates from the most recent tag and applies
   the current state with `cruft update`.
 

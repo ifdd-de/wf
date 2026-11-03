@@ -23,6 +23,7 @@ values = {
     "ifdd_wf_sso_group": "{{ cookiecutter.ifdd_wf_sso_group }}",
     "ifdd_wf_sso_auth_address": "{{ cookiecutter.ifdd_wf_sso_auth_address }}",
     "ifdd_wf_sso_service": "{{ cookiecutter.ifdd_wf_sso_service }}",
+    "ifdd_proxy_oauth2_proxy_service": "{{ cookiecutter.ifdd_proxy_oauth2_proxy_service }}",
     "ifdd_proxy_network": "{{ cookiecutter.ifdd_proxy_network }}",
     "ifdd_be_url": "{{ cookiecutter.ifdd_be_url }}",
     "ifdd_oidc_realm": "{{ cookiecutter.ifdd_oidc_realm }}",
@@ -49,6 +50,9 @@ rules = {
     "ifdd_wf_sso_group": (r"[A-Za-z0-9_./-]+", "a Keycloak group name (no spaces, no commas)"),
     "ifdd_wf_sso_auth_address": (r"https?://[A-Za-z0-9.-]+(:[0-9]+)?", "http(s)://host[:port] of oauth2-proxy, no path, no trailing slash"),
     "ifdd_wf_sso_service": (r"[A-Za-z0-9_-]+@[a-z]+", "a Traefik service reference such as oauth2-proxy@docker"),
+    # Shared with ifdd-de/proxy, which names its Traefik service so; this
+    # template appends @docker.
+    "ifdd_proxy_oauth2_proxy_service": (r"[A-Za-z0-9_-]+", "the Traefik service of oauth2-proxy without @docker, as in ifdd-de/proxy"),
     "ifdd_proxy_network": (NAME, "a Docker network name"),
     # Read by flows and notebooks (secrets/kestra.env); paths are appended.
     "ifdd_be_url": (r"https?://[A-Za-z0-9.-]+(:[0-9]+)?(/[^\s]*[^/\s])?", "the URL of ifdd-be without trailing slash"),
@@ -64,6 +68,17 @@ for key, (pattern, meaning) in rules.items():
 port = values["ifdd_wf_dev_port"]
 if port.isdigit() and not 1024 <= int(port) <= 65535:
     errors.append(f"ifdd_wf_dev_port={port}: expected a port between 1024 and 65535")
+
+# Deprecated: ifdd_wf_sso_service gave the service of the login callback.
+# A value other than its old default still wins, so existing instances keep
+# their router; the shared ifdd_proxy_oauth2_proxy_service replaces it.
+if values["ifdd_wf_enable_sso"] == "y" and values["ifdd_wf_sso_service"] != "oauth2-proxy@docker":
+    print(
+        f"WARNING: ifdd_wf_sso_service={values['ifdd_wf_sso_service']!r} is deprecated and still used; "
+        "set ifdd_proxy_oauth2_proxy_service (shared with ifdd-de/proxy) to the name without @docker "
+        "and ifdd_wf_sso_service back to oauth2-proxy@docker",
+        file=sys.stderr,
+    )
 
 if errors:
     print("Invalid template values:", file=sys.stderr)

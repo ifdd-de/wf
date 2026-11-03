@@ -24,6 +24,7 @@ und den Executions in der Kestra-Oberfläche.
 {%- if sso %}
 | 403 nach der Keycloak-Anmeldung | der Benutzer ist nicht in `{{ cookiecutter.ifdd_wf_sso_group }}` oder hat keine bestätigte E-Mail-Adresse | Gruppe zuordnen; Adresse bestätigen |
 | `/oauth2/callback` antwortet 404 | der Router für den Login-Callback fehlt, oder oauth2-proxy ist nicht healthy | die Router im Dashboard des Proxys prüfen |
+| endlose Login-Schleife; das Proxy-Log meldet `the service "<name>@docker" does not exist` | `ifdd_proxy_oauth2_proxy_service` weicht vom Wert der Proxy-Instanz ab; Traefik verwirft den Router des Login-Callbacks | den Wert des Proxys setzen (`cruft update --variables-to-update`), Kestra neu erzeugen ({ref}`ifdd-wf-setup-several-servers`) |
 {%- endif %}
 | die Kestra-Anmeldung scheitert | falsche Anmeldedaten, oder Kestra unter einem Pfadpräfix | `IFDD_WF_ADMIN_USER`/`IFDD_WF_ADMIN_PASSWORD` nehmen; Kestra an der Wurzel seines Hosts ausliefern |
 

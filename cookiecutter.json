@@ -18,6 +18,7 @@
   "ifdd_wf_sso_group": "ifdd_wf_admins",
   "ifdd_wf_sso_auth_address": "http://oauth2-proxy:4180",
   "ifdd_wf_sso_service": "oauth2-proxy@docker",
+  "ifdd_proxy_oauth2_proxy_service": "ifdd_proxy-oauth2-proxy",
   "ifdd_proxy_network": "proxy-net",
   "ifdd_be_url": "https://be.example.org",
   "ifdd_oidc_realm": "https://keycloak.example.org/realms/ifdd",
