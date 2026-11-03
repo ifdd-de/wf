@@ -1,6 +1,9 @@
 {%- set dind = cookiecutter.ifdd_wf_docker_mode == "dind" -%}
 {%- set sso = cookiecutter.ifdd_wf_enable_sso == "y" -%}
 {%- set slug = cookiecutter.ifdd_wf_prj_slug -%}
+{#- ifdd_wf_sso_service is deprecated: a value other than its old default
+    still wins; otherwise the service name shared with ifdd-de/proxy. -#}
+{%- set sso_service = cookiecutter.ifdd_wf_sso_service if cookiecutter.ifdd_wf_sso_service != "oauth2-proxy@docker" else cookiecutter.ifdd_proxy_oauth2_proxy_service ~ "@docker" -%}
 # Production: Kestra behind the IFDD proxy (ifdd-de/proxy) at
 # https://${IFDD_WF_HOST}/
 {%- if sso %}
@@ -127,10 +130,14 @@ services:
       - "traefik.http.middlewares.{{ slug }}-sso.forwardauth.address={{ cookiecutter.ifdd_wf_sso_auth_address }}/?allowed_groups={{ cookiecutter.ifdd_wf_sso_group }}"
       - "traefik.http.middlewares.{{ slug }}-sso.forwardauth.trustForwardHeader=true"
       - "traefik.http.routers.{{ slug }}.middlewares={{ slug }}-sso"
-      # Login callback and sign-out of oauth2-proxy on this host.
+      # Login callback and sign-out of oauth2-proxy on this host. Required:
+      # the router above matches /oauth2/ as well and outranks the fallback
+      # router of the proxy, so without this one the callback would pass the
+      # login again (a loop). The service is named by the proxy
+      # (ifdd_proxy_oauth2_proxy_service, shared with ifdd-de/proxy).
       - "traefik.http.routers.{{ slug }}-oauth2.rule=Host(`${IFDD_WF_HOST}`) && PathPrefix(`/oauth2/`)"
       - "traefik.http.routers.{{ slug }}-oauth2.entrypoints={{ cookiecutter.ifdd_wf_entrypoint }}"
-      - "traefik.http.routers.{{ slug }}-oauth2.service={{ cookiecutter.ifdd_wf_sso_service }}"
+      - "traefik.http.routers.{{ slug }}-oauth2.service={{ sso_service }}"
 {%- endif %}
     depends_on:
       postgres:

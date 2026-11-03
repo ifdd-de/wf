@@ -2,6 +2,26 @@
 
 The version scheme follows the other IFDD templates: `YY.MM.N`.
 
+## [Unreleased]
+
+- The router of the login callback names the Traefik service of oauth2-proxy
+  through the new shared variable `ifdd_proxy_oauth2_proxy_service` (default
+  `ifdd_proxy-oauth2-proxy`, the name a proxy with the default project name
+  declares), plus `@docker`. `ifdd-de/proxy` names its service with the same
+  variable. Before, the default `oauth2-proxy@docker` matched no proxy since
+  26.10.3; Traefik dropped the router, and every login ended in a loop.
+- `ifdd_wf_sso_service` is deprecated: a value other than its default
+  `oauth2-proxy@docker` still wins, and the pre-generation hook warns.
+- Setup page: section on several servers (login gate of the own server,
+  redirect URI in the realm, CA of the other server); troubleshooting: the
+  login loop.
+- Fixture `multi-server`; `tests/check_sso_service.py` checks the router of
+  the login callback for every fixture.
+- Upgrade: `cruft update --variables-to-update
+  '{"ifdd_proxy_oauth2_proxy_service": "<name in the proxy instance>"}'`
+  (and `ifdd_wf_sso_service` back to `oauth2-proxy@docker` if it was set),
+  then recreate Kestra (`docker compose -f docker-compose-production.yml up -d`).
+
 ## [26.10.3] - 2026-10-30
 
 - Kestra v2.0.8 (`ifdd_wf_kestra_image`, was v2.0.4), Docker-in-Docker

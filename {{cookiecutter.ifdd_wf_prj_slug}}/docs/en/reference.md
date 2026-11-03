@@ -72,4 +72,4 @@ Router and service: `{{ cookiecutter.ifdd_wf_prj_slug }}`, rule
 port 8080{% if sso %}; middleware `{{ cookiecutter.ifdd_wf_prj_slug }}-sso`
 (forwardAuth to `{{ cookiecutter.ifdd_wf_sso_auth_address }}`), and the
 router `{{ cookiecutter.ifdd_wf_prj_slug }}-oauth2` for `/oauth2/` to
-`{{ cookiecutter.ifdd_wf_sso_service }}`{% endif %}.
+`{{ cookiecutter.ifdd_wf_sso_service if cookiecutter.ifdd_wf_sso_service != "oauth2-proxy@docker" else cookiecutter.ifdd_proxy_oauth2_proxy_service ~ "@docker" }}`{% endif %}.

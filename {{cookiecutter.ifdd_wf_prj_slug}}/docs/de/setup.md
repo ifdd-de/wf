@@ -56,6 +56,28 @@ ein). Ohne abschließenden Zeilenumbruch kodieren:
 {ref}`ifdd-wf-reference`, die Template-Variablen in
 {ref}`ifdd-instances-wf`.
 
+(ifdd-wf-setup-several-servers)=
+### Mehrere Server
+
+Laufen Keycloak, das Backend oder die Inhaltsdienste auf einem anderen Server,
+nutzt diese Instanz trotzdem den Proxy ihres eigenen Servers:
+{%- if sso %}
+
+- Das Login-Gate ist der oauth2-proxy dieses Proxys. Der Router des
+  Login-Callbacks nennt dessen Traefik-Dienst,
+  `ifdd_proxy_oauth2_proxy_service` (geteilt mit `ifdd-de/proxy`; diese
+  Instanz: `{{ cookiecutter.ifdd_proxy_oauth2_proxy_service }}`). Beide Instanzen brauchen denselben
+  Wert. Sonst verwirft Traefik den Router, und jede Anmeldung endet in einer
+  Schleife.
+- Der Realm dieses Servers braucht `https://<IFDD_WF_HOST>/oauth2/callback` als
+  Redirect-URI des Proxy-Clients (`ifdd_keycloak_proxy_gate_hosts` von
+  `ifdd-de/keycloak`), im Realm, den der Proxy nutzt.
+{%- endif %}
+- Flows und Notebooks rufen den anderen Server unter seiner öffentlichen URL
+  auf. Die CA in `certs/` muss die sein, die das Zertifikat dieses Servers
+  ausgestellt hat (bei einer Zwischen-CA: die Root oder ein Bündel aus Root und
+  Zwischen-CA); nach einer Änderung die Images neu bauen.
+
 ## Erster Start
 
 ```bash

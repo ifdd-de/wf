@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        fixture: [defaults, socket-root-nosso]
+        fixture: [defaults, socket-root-nosso, multi-server]
 
     steps:
       - uses: actions/checkout@v7
@@ -47,6 +47,9 @@ jobs:
             echo "Unrendered placeholders found" >&2
             exit 1
           fi
+
+      - name: The login callback router names the Traefik service of the proxy
+        run: python template/tests/check_sso_service.py template/tests/fixtures/${{ matrix.fixture }}.yaml "$INSTANCE"
 
       - name: Static checks
         working-directory: ${{ env.INSTANCE }}

@@ -1,0 +1,13 @@
+# One of several servers: wf behind the login gate of the proxy on its own
+# server (stage-b), Keycloak and the backend on another one (stage-a). The
+# service name of oauth2-proxy is shared with ifdd-de/proxy (same value in
+# both instances, as one line of cookiecutter_all.yaml).
+default_context:
+  ifdd_wf_prj_name: Example WF
+  ifdd_wf_host: wf.stage-b.example.test
+  ifdd_wf_admin_email: admin@stage-b.example.test
+  ifdd_wf_enable_sso: "y"
+  ifdd_wf_sso_group: example_wf_admins
+  ifdd_proxy_oauth2_proxy_service: example_proxy-gate
+  ifdd_be_url: https://rest.stage-a.example.test
+  ifdd_oidc_realm: https://id.stage-a.example.test/realms/realm-b

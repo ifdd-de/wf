@@ -54,6 +54,27 @@ Encode without a trailing newline: `printf '%s' 'value' | base64 -w0`.
 The entries are listed in {ref}`ifdd-wf-reference`, the template variables
 in {ref}`ifdd-instances-wf`.
 
+(ifdd-wf-setup-several-servers)=
+### Several servers
+
+When Keycloak, the backend or the content services run on another server,
+this instance still uses the proxy of its own server:
+{%- if sso %}
+
+- The login gate is the oauth2-proxy of that proxy. The router of the login
+  callback names its Traefik service, `ifdd_proxy_oauth2_proxy_service`
+  (shared with `ifdd-de/proxy`; this instance:
+  `{{ cookiecutter.ifdd_proxy_oauth2_proxy_service }}`). Both instances must have the same value.
+  Otherwise Traefik drops the router, and every login ends in a loop.
+- The realm of this server needs `https://<IFDD_WF_HOST>/oauth2/callback` as a
+  redirect URI of the proxy's client (`ifdd_keycloak_proxy_gate_hosts` of
+  `ifdd-de/keycloak`), in the realm the proxy uses.
+{%- endif %}
+- Flows and notebooks call the other server under its public URL. The CA in
+  `certs/` must be the one that signed that server's certificate (for an
+  intermediate CA: the root, or a bundle of root and intermediate); rebuild
+  the images after a change.
+
 ## First start
 
 ```bash
