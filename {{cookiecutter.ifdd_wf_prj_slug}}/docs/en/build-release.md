@@ -21,8 +21,11 @@ The script builds all images with `--pull`, so security fixes of moving
 base images are picked up. Run it again after a change of `certs/`,
 `kestra/`, {% if dind %}`dind/`, {% endif %}`runners/` or an image version.
 `build/install-certs.sh` adds every `*.crt` and `*.pem` of `certs/` to the
-system trust store of each image; Kestra's Java runtime keeps its own trust
-store and does not use them.
+system trust store of each image. In the Kestra image
+`build/install-java-certs.sh` also adds them to the trust store of the Java
+runtime, one certificate at a time, so a file may hold a bundle (for example
+an intermediate and its root CA). Kestra's Git synchronisation needs this
+when the content repository is reached through a TLS-inspecting proxy.
 {%- if dind %}
 
 The runner images are local. The Docker-in-Docker daemon has its own image
@@ -63,6 +66,6 @@ them.
 ```{note}
 Not tested: the three Dockerfiles have not been built for the template (no
 Docker in that environment); in particular whether the Kestra image has pip
-in `/app/.venv`{% if dind %}, and loading the runner image into the
-Docker-in-Docker daemon{% endif %}.
+in `/app/.venv` and `keytool` for the Java trust store{% if dind %}, and
+loading the runner image into the Docker-in-Docker daemon{% endif %}.
 ```

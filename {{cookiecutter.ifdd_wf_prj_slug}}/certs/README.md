@@ -1,13 +1,17 @@
 # Additional CA certificates
 
-Place the PEM files of internal CAs here (`*.crt` or `*.pem`, one certificate
-per file). They are git-ignored; the meta repository copies them in after the
+Place the PEM files of internal CAs here (`*.crt` or `*.pem`), for example
+the CA of the IFDD proxy and the CAs of a TLS-inspecting proxy in front of the
+Git host. They are git-ignored; the meta repository copies them in after the
 cruft run (`copy_wf_certs.sh`).
 
-At build time they are added to the system trust store of
+At build time they are added to
 
-- the Kestra image (for Python processes of the Process task runner; Kestra's
-  JVM keeps its own trust store and does not use them),
+- the trust store of the Java runtime of the Kestra image (Git
+  synchronisation and every other HTTPS call of Kestra), each certificate of a
+  file on its own, so a file may hold a bundle (`build/install-java-certs.sh`),
+- the system trust store of the Kestra image (for Python processes of the
+  Process task runner),
 - the Docker-in-Docker image (for image pulls through a TLS-inspecting proxy),
 - the papermill runner image.
 

@@ -35,6 +35,15 @@ kestra:
       base-path: /app/storage
 
   tasks:
+    # Tasks that call Kestra's own API (NamespaceSync of the Git
+    # synchronisation) use this URL and login instead of kestra.url, the
+    # public URL behind the proxy{% if cookiecutter.ifdd_wf_enable_sso == "y" %} and its login gate{% endif %}.
+    # Every flow may use them; all users share this one Kestra account anyway.
+    sdk:
+      authentication:
+        url: http://localhost:8080
+        username: ${IFDD_WF_ADMIN_USER}
+        password: ${IFDD_WF_ADMIN_PASSWORD}
     # Shared with the Docker-in-Docker daemon at the same path, so the task
     # runner's file handling works in both modes.
     tmp-dir:

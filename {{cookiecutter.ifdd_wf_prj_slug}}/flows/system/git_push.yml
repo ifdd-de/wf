@@ -1,0 +1,44 @@
+# Kestra -> Git: pushes the flows and namespace files of every root namespace
+# in ENV_GIT_NAMESPACES, with their child namespaces, to the content
+# repository. Kestra is the source of truth: a flow or file deleted in Kestra
+# is deleted in Git as well (it stays in the Git history).
+#
+# Loaded by adm_02_run.sh (production) only after git_restore succeeded, so
+# an empty, newly built instance can never push over the repository.
+# Run it at once with adm_03_git_push.sh. Do not edit it in the UI:
+# adm_02_run.sh loads this file again on every start.
+#
+# Layout in Git: <namespace>/flows/<flow>.yaml and <namespace>/files/<path>.
+id: git_push
+namespace: system
+description: Push flows and namespace files from Kestra to the content repository (flows/system/git_push.yml).
+
+# A scheduled run and adm_03_git_push.sh must not push at the same time.
+concurrency:
+  limit: 1
+
+tasks:
+  - id: namespaces
+    type: io.kestra.plugin.core.flow.Loop
+    values: "{{ envs.git_namespaces | split(',') }}"
+    tasks:
+      - id: push
+        type: io.kestra.plugin.git.NamespaceSync
+        namespace: "{{ item.value }}"
+        includeChildNamespaces: true
+        sourceOfTruth: KESTRA
+        whenMissingInSource: DELETE
+        protectedNamespaces:
+          - system
+        url: "{{ envs.git_url }}"
+        username: "{{ envs.git_username }}"
+        password: "{{ secret('GIT_TOKEN') }}"
+        branch: "{{ envs.git_branch }}"
+        # Commit author; NamespaceSync uses it only when both are set.
+        authorName: Kestra
+        authorEmail: kestra@localhost.invalid
+
+triggers:
+  - id: hourly
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 * * * *"

@@ -21,8 +21,12 @@ Das Skript baut alle Images mit `--pull`, damit Sicherheitskorrekturen
 beweglicher Basis-Images ankommen. Nach einer Änderung an `certs/`,
 `kestra/`, {% if dind %}`dind/`, {% endif %}`runners/` oder einer
 Image-Version erneut ausführen. `build/install-certs.sh` fügt jede `*.crt`
-und `*.pem` aus `certs/` dem System-Trust-Store jedes Images hinzu; die
-Java-Laufzeit von Kestra hält einen eigenen Trust-Store und nutzt sie nicht.
+und `*.pem` aus `certs/` dem System-Trust-Store jedes Images hinzu. Im
+Kestra-Image fügt `build/install-java-certs.sh` sie zusätzlich dem
+Trust-Store der Java-Laufzeit hinzu, jedes Zertifikat einzeln; eine Datei
+darf also ein Bündel enthalten (etwa eine Zwischen-CA und ihre Wurzel-CA).
+Die Git-Synchronisation von Kestra braucht das, wenn das Inhalts-Repository
+über einen TLS-prüfenden Proxy erreicht wird.
 {%- if dind %}
 
 Die Runner-Images sind lokal. Der Docker-in-Docker-Daemon hat einen eigenen
@@ -65,6 +69,6 @@ sie betreibt.
 ```{note}
 Nicht getestet: Die drei Dockerfiles wurden für das Template nicht gebaut
 (kein Docker in dieser Umgebung); insbesondere ob das Kestra-Image pip in
-`/app/.venv` hat{% if dind %}, und das Laden des Runner-Images in den
-Docker-in-Docker-Daemon{% endif %}.
+`/app/.venv` hat und `keytool` für den Java-Trust-Store{% if dind %}, und
+das Laden des Runner-Images in den Docker-in-Docker-Daemon{% endif %}.
 ```

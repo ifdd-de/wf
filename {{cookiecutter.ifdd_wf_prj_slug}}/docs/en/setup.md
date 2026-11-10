@@ -14,7 +14,7 @@
 | the Keycloak group `{{ cookiecutter.ifdd_wf_sso_group }}` | its members may pass the gate |
 {%- endif %}
 | the CA certificate of the proxy, if it uses a CA of its own | it is built into the images |
-| a Git content repository and a token with write access to it only | the flows are pushed there |
+| a Git content repository with the branch `{{ cookiecutter.ifdd_wf_git_branch }}` (one branch per instance, for example per stage), and a token that may only read and write its contents | the flows are pushed there and restored from there (production) |
 
 ## Create the instance
 
@@ -46,10 +46,13 @@ value; existing files are never overwritten.
 | `.env` | host, development port, Kestra's login (`IFDD_WF_ADMIN_USER`, `IFDD_WF_ADMIN_PASSWORD`), database password, encryption key, the tag of the runner image |
 | `secrets/kestra.env` | flow secrets `SECRET_<NAME>` (base64) and flow variables `ENV_<NAME>` (plain), handed to Kestra |
 
-Fill in `secrets/kestra.env` by hand: the Git token (`SECRET_GIT_TOKEN`,
-base64), `ENV_GIT_URL`, `ENV_GIT_USERNAME`, `ENV_GIT_BRANCH`, and the secret
-of `{{ cookiecutter.ifdd_keycloak_api_client_id }}`
+Fill in `secrets/kestra.env` by hand or by the scripts that create the
+instance: the token of the content repository (`SECRET_GIT_TOKEN`, base64;
+without it `adm_02_run.sh production` refuses to start) and the secret of
+`{{ cookiecutter.ifdd_keycloak_api_client_id }}`
 (`SECRET_IFDD_API_CLIENT_SECRET`, base64; the meta repository does that one).
+Repository, user, branch and root namespaces are template variables
+(`ifdd_wf_git_*`).
 Encode without a trailing newline: `printf '%s' 'value' | base64 -w0`.
 The entries are listed in {ref}`ifdd-wf-reference`, the template variables
 in {ref}`ifdd-instances-wf`.
@@ -84,11 +87,13 @@ this instance still uses the proxy of its own server:
 
 Then open `https://<IFDD_WF_HOST>/` and log in{% if sso %} (Keycloak first,
 then{% else %} with{% endif %} `IFDD_WF_ADMIN_USER` and `IFDD_WF_ADMIN_PASSWORD`
-from `.env`{% if sso %}){% endif %}. Import
-`examples/flows/system_git_sync.yml` after adjusting its namespace list, run
-it once and check the content repository.
+from `.env`{% if sso %}){% endif %}. The first start restores the flows and
+namespace files of the root namespaces from the branch and loads the hourly
+push ({ref}`ifdd-wf-operations`); with a new branch there is nothing to
+restore yet.
 
-The database starts empty. Flows of an older instance are imported in the
+Apart from that the database starts empty. Flows of an older instance are
+imported in the
 UI or through the API; Kestra 2.0 changed several task types (for example
 `ForEach` -> `Loop`), so check the Kestra migration guide for 2.0.
 

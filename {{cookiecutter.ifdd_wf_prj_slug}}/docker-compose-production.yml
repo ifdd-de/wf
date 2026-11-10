@@ -99,8 +99,19 @@ services:
       IFDD_WF_DB_PASSWORD: "${IFDD_WF_DB_PASSWORD:?set in .env}"
       IFDD_WF_ENCRYPTION_KEY: "${IFDD_WF_ENCRYPTION_KEY:?set in .env}"
       ENV_RUNNER_PAPERMILL_IMAGE: "${IFDD_WF_RUNNER_PAPERMILL_IMAGE:?set in .env}"
+      # Git synchronisation (flows/system/); the token is SECRET_GIT_TOKEN in
+      # secrets/kestra.env. Set here, not in secrets/kestra.env, so that a
+      # cruft update reaches existing instances; these values win over
+      # entries of the same name there.
+      ENV_GIT_URL: "{{ cookiecutter.ifdd_wf_git_url }}"
+      ENV_GIT_USERNAME: "{{ cookiecutter.ifdd_wf_git_username }}"
+      ENV_GIT_BRANCH: "{{ cookiecutter.ifdd_wf_git_branch }}"
+      ENV_GIT_NAMESPACES: "{{ cookiecutter.ifdd_wf_git_namespaces }}"
     volumes:
       - "./kestra/application.yml:/etc/kestra/application.yml:ro"
+      # Loaded and run by adm_02_run.sh and adm_03_git_push.sh.
+      - "./flows/system:/etc/kestra/system-flows:ro"
+      - "./kestra/git_sync.py:/etc/kestra/git_sync.py:ro"
       - kestra-storage:/app/storage
       - kestra-wd:/tmp/kestra-wd
 {%- if dind %}

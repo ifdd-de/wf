@@ -19,6 +19,10 @@
   "ifdd_wf_sso_auth_address": "http://oauth2-proxy:4180",
   "ifdd_wf_sso_service": "oauth2-proxy@docker",
   "ifdd_proxy_oauth2_proxy_service": "ifdd_proxy-oauth2-proxy",
+  "ifdd_wf_git_url": "https://git.example.org/example/wf-content.git",
+  "ifdd_wf_git_username": "git",
+  "ifdd_wf_git_branch": "main",
+  "ifdd_wf_git_namespaces": "ifdd",
   "ifdd_proxy_network": "proxy-net",
   "ifdd_be_url": "https://be.example.org",
   "ifdd_oidc_realm": "https://keycloak.example.org/realms/ifdd",
@@ -26,6 +30,7 @@
   "_copy_without_render": [
     ".github",
     "tests",
-    "examples"
+    "examples",
+    "flows"
   ]
 }
