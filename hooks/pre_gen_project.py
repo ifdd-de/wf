@@ -24,6 +24,10 @@ values = {
     "ifdd_wf_sso_auth_address": "{{ cookiecutter.ifdd_wf_sso_auth_address }}",
     "ifdd_wf_sso_service": "{{ cookiecutter.ifdd_wf_sso_service }}",
     "ifdd_proxy_oauth2_proxy_service": "{{ cookiecutter.ifdd_proxy_oauth2_proxy_service }}",
+    "ifdd_wf_git_url": "{{ cookiecutter.ifdd_wf_git_url }}",
+    "ifdd_wf_git_username": "{{ cookiecutter.ifdd_wf_git_username }}",
+    "ifdd_wf_git_branch": "{{ cookiecutter.ifdd_wf_git_branch }}",
+    "ifdd_wf_git_namespaces": "{{ cookiecutter.ifdd_wf_git_namespaces }}",
     "ifdd_proxy_network": "{{ cookiecutter.ifdd_proxy_network }}",
     "ifdd_be_url": "{{ cookiecutter.ifdd_be_url }}",
     "ifdd_oidc_realm": "{{ cookiecutter.ifdd_oidc_realm }}",
@@ -53,6 +57,12 @@ rules = {
     # Shared with ifdd-de/proxy, which names its Traefik service so; this
     # template appends @docker.
     "ifdd_proxy_oauth2_proxy_service": (r"[A-Za-z0-9_-]+", "the Traefik service of oauth2-proxy without @docker, as in ifdd-de/proxy"),
+    # Git synchronisation (flows/system/): HTTPS only, the token is the password.
+    "ifdd_wf_git_url": (r"https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*[^\s@/]", "an https:// URL of the content repository, without credentials"),
+    "ifdd_wf_git_username": (r"[A-Za-z0-9][A-Za-z0-9_.-]*", "a Git user name (no spaces, no @)"),
+    "ifdd_wf_git_branch": (r"[A-Za-z0-9][A-Za-z0-9_./-]*", "a branch name without refs/heads/ or origin/"),
+    # Kestra's namespace pattern (Flow.namespace, Kestra 2.0.8), comma separated.
+    "ifdd_wf_git_namespaces": (r"[a-z0-9][a-z0-9._-]*(,[a-z0-9][a-z0-9._-]*)*", "root namespaces separated by commas, no spaces"),
     "ifdd_proxy_network": (NAME, "a Docker network name"),
     # Read by flows and notebooks (secrets/kestra.env); paths are appended.
     "ifdd_be_url": (r"https?://[A-Za-z0-9.-]+(:[0-9]+)?(/[^\s]*[^/\s])?", "the URL of ifdd-be without trailing slash"),
@@ -79,6 +89,25 @@ if values["ifdd_wf_enable_sso"] == "y" and values["ifdd_wf_sso_service"] != "oau
         "and ifdd_wf_sso_service back to oauth2-proxy@docker",
         file=sys.stderr,
     )
+
+branch = values["ifdd_wf_git_branch"]
+if ".." in branch or branch.endswith((".lock", "/", ".")) or "//" in branch or branch.startswith(("refs/", "origin/")):
+    errors.append(f"ifdd_wf_git_branch={branch!r}: expected a branch name without refs/ or origin/, '..', '//' or a trailing .lock, / or .")
+
+# Each root namespace is synchronised with its child namespaces. A root
+# inside another root would be synchronised twice; "system" holds the
+# synchronisation flows themselves and is never synchronised.
+namespaces = values["ifdd_wf_git_namespaces"].split(",")
+for ns in namespaces:
+    if ns == "system" or ns.startswith("system."):
+        errors.append(f"ifdd_wf_git_namespaces: {ns!r} is reserved for the synchronisation flows")
+    if len(ns) > 150:
+        errors.append(f"ifdd_wf_git_namespaces: {ns!r} is longer than 150 characters")
+    for other in namespaces:
+        if other != ns and other.startswith(ns + "."):
+            errors.append(f"ifdd_wf_git_namespaces: {other!r} lies inside {ns!r}; list only the root")
+if len(set(namespaces)) != len(namespaces):
+    errors.append("ifdd_wf_git_namespaces: a namespace is listed twice")
 
 if errors:
     print("Invalid template values:", file=sys.stderr)

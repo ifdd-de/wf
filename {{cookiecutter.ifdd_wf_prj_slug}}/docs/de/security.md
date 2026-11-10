@@ -54,7 +54,16 @@ jedem Flow root-gleiche Kontrolle über den Host.
   lesen. Sein Secret erreicht ein Notebook als Umgebungsvariable, nie als
   papermill-Parameter: Parameter werden in das ausgeführte Notebook
   geschrieben.
-- Das Git-Token sollte nur Schreibrecht auf das Inhalts-Repository haben.
+- Das Git-Token (`SECRET_GIT_TOKEN`) sollte nur die Inhalte des
+  Inhalts-Repositorys lesen und schreiben dürfen. Wer Flows bearbeiten kann,
+  kann es lesen.
+- Das Inhalts-Repository enthält jeden Flow und jede Namespace-Datei,
+  Notebooks eingeschlossen; daher privat halten.
+- Tasks, die Kestras eigene API aufrufen, etwa die Git-Synchronisation,
+  nutzen die Anmeldung von Kestra (`kestra.tasks.sdk.authentication` in
+  `kestra/application.yml`). Jeder Flow kann sie nutzen; das gibt einem
+  Flow-Autor nichts zusätzlich, weil sich ohnehin alle dieses eine Konto
+  teilen.
 
 ## Netz und Ports
 

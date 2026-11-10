@@ -13,6 +13,8 @@ the executions in the Kestra UI.
 | `adm_02_run.sh`: `placeholders <<generate:...>> left` | a value was not generated | set it by hand with the quality the placeholder names |
 | `adm_02_run.sh`: `Docker network ... missing` | the proxy is not running | start the proxy first |
 | `adm_02_run.sh`: `runner image ... missing` | the images were not built | `./adm_01_build.sh production` |
+| `adm_02_run.sh`: `SECRET_GIT_TOKEN is empty` | the token of the content repository is missing | enter it in `secrets/kestra.env`: `printf '%s' 'token' \| base64 -w0` |
+| `adm_02_run.sh`: `restore failed ... git_push NOT loaded` | the restore failed: token, branch, repository URL or a certificate | open the execution of `system.git_restore` in the UI, fix the cause, `./adm_02_run.sh production` again |
 | Kestra stays `starting` for minutes | Kestra loads its plugins at start | wait; the health check allows 120 s |
 | Kestra cannot connect to the database after `.env` was changed | the database keeps the password it was created with | restore the old `IFDD_WF_DB_PASSWORD` |
 | encrypted values cannot be read | `IFDD_WF_ENCRYPTION_KEY` changed | restore the old key from the backup |
@@ -37,4 +39,6 @@ the executions in the Kestra UI.
 | a task container does not trust a certificate | the CA is not in `certs/`, or the image was not rebuilt | copy it, `./adm_01_build.sh production` |
 | the runner image is not found in a task | `pullPolicy: NEVER` and the image is not in the daemon | `./adm_02_run.sh production` loads it |
 | an imported flow of Kestra 1.x is refused | task types changed in Kestra 2.0 (for example `ForEach` -> `Loop`) | adapt the flow; see the Kestra migration guide for 2.0 |
-| the Git sync fails | token, URL, user or branch in `secrets/kestra.env` wrong | check the four entries |
+| `system.git_push` fails | the token expired or may not write, the branch is missing, or the variables `ifdd_wf_git_*` are wrong | the execution log names the cause; renew the token in `secrets/kestra.env` and run `./adm_02_run.sh production` |
+| a Git task fails with `could not be established because of SSL problems` | the CA of the Git host, or of a TLS-inspecting proxy, is not in the Java trust store of Kestra | copy it into `certs/`, `./adm_01_build.sh production`, `./adm_02_run.sh production` |
+| a deleted child namespace is back after a rebuild | its folder stayed in Git | delete the folder in the content repository |

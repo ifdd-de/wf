@@ -4,8 +4,9 @@ cookiecutter/cruft template for workflow orchestration with
 [Kestra](https://kestra.io) (open-source edition, 2.0 LTS) behind the IFDD
 proxy (`ifdd-de/proxy`). The generated instance runs Kestra with PostgreSQL,
 starts task containers in a Docker-in-Docker daemon (or on the host socket),
-runs Jupyter notebooks with papermill in a local runner image, and pushes
-flows from Kestra to a Git content repository.
+runs Jupyter notebooks with papermill in a local runner image, and keeps
+its flows in a Git content repository: pushed hourly, restored into a newly
+built instance.
 
 ## Generate an instance
 
@@ -41,6 +42,10 @@ generated secrets and the certificates out of every later `cruft update`.
 | `ifdd_wf_sso_auth_address` | `http://oauth2-proxy:4180` | oauth2-proxy as seen from Traefik |
 | `ifdd_proxy_oauth2_proxy_service` | `ifdd_proxy-oauth2-proxy` | **shared** with `ifdd-de/proxy`: its Traefik service of oauth2-proxy, without `@docker`; the router of the login callback names `<value>@docker`. The default is the name of a proxy with the default project name |
 | `ifdd_wf_sso_service` | `oauth2-proxy@docker` | deprecated: a value other than this default still names the service of the login callback (the pre-generation hook warns); leave the default and set `ifdd_proxy_oauth2_proxy_service` |
+| `ifdd_wf_git_url` | `https://git.example.org/example/wf-content.git` | content repository of the flows (HTTPS, no credentials; the token goes into `secrets/kestra.env`) |
+| `ifdd_wf_git_username` | `git` | user name sent with the token |
+| `ifdd_wf_git_branch` | `main` | branch of this instance, for example one per stage; must exist |
+| `ifdd_wf_git_namespaces` | `ifdd` | root namespaces to synchronise, comma-separated, each with its child namespaces |
 | `ifdd_proxy_network` | `proxy-net` | external network of the proxy |
 | `ifdd_be_url` | `https://be.example.org` | ifdd-be for flows and notebooks (`ENV_IFDD_BE_URL` in `secrets/kestra.env`) |
 | `ifdd_oidc_realm` | `https://keycloak.example.org/realms/ifdd` | realm URL; its token endpoint becomes `ENV_IFDD_OIDC_TOKEN_URL` |

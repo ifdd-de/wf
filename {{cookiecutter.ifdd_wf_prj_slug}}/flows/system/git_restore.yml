@@ -1,0 +1,69 @@
+# Git -> Kestra: restores one root namespace and its child namespaces from
+# the content repository. Run by adm_02_run.sh (production) for each root
+# namespace in ENV_GIT_NAMESPACES that has no flow in Kestra, typically
+# after the instance was rebuilt.
+#
+# The open-source edition cannot create a namespace through its API, so a
+# NamespaceSync of the root with includeChildNamespaces skips child
+# namespaces that do not exist yet (Kestra 2.0.8, plugin-git 4.6.3). This
+# flow therefore lists the namespace folders in the repository and restores
+# each of them on its own; importing its flows creates the namespace.
+#
+# Loaded by adm_02_run.sh on every start; do not edit it in the UI.
+id: git_restore
+namespace: system
+description: Restore flows and namespace files of one root namespace from the content repository (flows/system/git_restore.yml).
+
+inputs:
+  - id: namespace
+    type: STRING
+    description: Root namespace to restore, with its child namespaces.
+
+tasks:
+  - id: discover
+    type: io.kestra.plugin.core.flow.WorkingDirectory
+    tasks:
+      - id: clone
+        type: io.kestra.plugin.git.Clone
+        url: "{{ envs.git_url }}"
+        username: "{{ envs.git_username }}"
+        password: "{{ secret('GIT_TOKEN') }}"
+        branch: "{{ envs.git_branch }}"
+        directory: repo
+      # Prints the root and every folder <root>.* of the repository as the
+      # output "namespaces". The root is always listed, so a namespace that
+      # is not in Git yet restores nothing instead of failing.
+      - id: list
+        type: io.kestra.plugin.scripts.shell.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          ROOT: "{{ inputs.namespace }}"
+        commands:
+          - |
+            set -eu
+            list="\"$ROOT\""
+            for dir in repo/*/; do
+              ns=$(basename "$dir")
+              case "$ns" in *[!a-z0-9._-]*) continue ;; esac
+              case "$ns" in "$ROOT".*) list="$list,\"$ns\"" ;; esac
+            done
+            echo "::{\"outputs\":{\"namespaces\":[$list]}}::"
+
+  - id: restore
+    type: io.kestra.plugin.core.flow.Loop
+    values: "{{ outputs.list.vars.namespaces }}"
+    tasks:
+      - id: sync
+        type: io.kestra.plugin.git.NamespaceSync
+        namespace: "{{ item.value }}"
+        includeChildNamespaces: false
+        sourceOfTruth: GIT
+        # The namespace is empty; nothing in Kestra is to be deleted.
+        whenMissingInSource: KEEP
+        protectedNamespaces:
+          - system
+        url: "{{ envs.git_url }}"
+        username: "{{ envs.git_username }}"
+        password: "{{ secret('GIT_TOKEN') }}"
+        branch: "{{ envs.git_branch }}"

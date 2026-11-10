@@ -5,7 +5,7 @@
 
 Der Workflow-Dienst eines IFDD-Knotens: Kestra (Open-Source-Edition) mit
 PostgreSQL führt Flows aus, startet Task-Container, führt Jupyter-Notebooks
-mit papermill aus und schiebt die Flows in ein Git-Inhalts-Repository. Dieses
+mit papermill aus und hält seine Flows in einem Git-Inhalts-Repository. Dieses
 Kapitel beschreibt die Instanz `{{ cookiecutter.ifdd_wf_prj_slug }}`, erzeugt
 aus dem Template `ifdd-de/wf`, aus Sicht derer, die sie einrichten, bauen,
 betreiben und absichern.
@@ -18,6 +18,7 @@ betreiben und absichern.
 | Zugang | {% if sso %}Login-Gate des Proxys (Keycloak-Gruppe `{{ cookiecutter.ifdd_wf_sso_group }}`), dann die eigene Anmeldung von Kestra{% else %}nur die eigene Anmeldung von Kestra{% endif %} |
 | Backend für Flows | `{{ cookiecutter.ifdd_be_url }}`, Client `{{ cookiecutter.ifdd_keycloak_api_client_id }}` (nur lesend) |
 | Entwicklung | `http://127.0.0.1:{{ cookiecutter.ifdd_wf_dev_port }}/` |
+| Inhalts-Repository | `{{ cookiecutter.ifdd_wf_git_url }}`, Branch `{{ cookiecutter.ifdd_wf_git_branch }}`, Wurzel-Namespaces `{{ cookiecutter.ifdd_wf_git_namespaces }}` (Produktion) |
 
 ## Was die Instanz enthält
 
@@ -26,8 +27,10 @@ Zwei Compose-Dateien; das Kestra-Image (`kestra/`: `Dockerfile`,
 Docker-in-Docker-Image (`dind/`){% endif %} und das papermill-Runner-Image
 (`runners/papermill/`), alle lokal gebaut und mit den CA-Zertifikaten aus
 `certs/` im Trust-Store; `.env` und `secrets/kestra.env` mit erzeugten
-Werten; Beispiel-Flows und -Notebooks; die Skripte `adm_01_build.sh` und
-`adm_02_run.sh`.
+Werten; die Flows der Git-Synchronisation (`flows/system/`) und ihr
+Hilfsskript `kestra/git_sync.py`; Beispiel-Flows und -Notebooks; die
+Skripte `adm_01_build.sh`, `adm_02_run.sh`, `adm_03_git_push.sh` und
+`adm_99_destroy.sh`.
 
 ## Architektur
 
@@ -47,7 +50,8 @@ flowchart LR
   Kestra -->|Host-Socket| Docker[Docker des Hosts] --> Tasks[Task-Container]
 {%- endif %}
   Tasks -->|"über den Proxy: be, Keycloak"| Proxy
-  Kestra -->|git push| Git[Inhalts-Repository]
+  Kestra -->|Push, stündlich| Git[Inhalts-Repository]
+  Git -->|Restore beim Start| Kestra
 ```
 
 | Wer | Nutzt wf für |

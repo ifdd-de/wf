@@ -18,12 +18,17 @@ ist.
 | `dind/` | Docker-in-Docker-Image für Task-Container |
 {%- endif %}
 | `runners/papermill/` | lokales Runner-Image für Notebooks |
+| `flows/system/` | `git_push.yml` und `git_restore.yml`, die Flows der Git-Synchronisation (Namespace `system`) |
+| `kestra/git_sync.py` | lädt diese Flows, stellt wieder her, schiebt; die Skripte rufen es im Kestra-Container auf |
 | `build/install-certs.sh` | fügt `certs/*` dem Trust-Store jedes Images hinzu |
+| `build/install-java-certs.sh` | fügt `certs/*` dem Java-Trust-Store des Kestra-Images hinzu |
 | `certs/` | interne CA-Zertifikate (von Git ausgenommen) |
 | `secrets/kestra.env` | Flow-Secrets und Flow-Variablen (von Git ausgenommen) |
 | `.env` | Host, Ports, erzeugte Passwörter und Schlüssel (von Git ausgenommen) |
-| `examples/` | Git-Sync-Flow, papermill-Flow, Backend-Beispiel-Flow und Notebooks |
-| `adm_01_build.sh`, `adm_02_run.sh` | bauen; prüfen und starten |
+| `examples/` | papermill-Flow, Backend-Beispiel-Flow und Notebooks |
+| `adm_01_build.sh`, `adm_02_run.sh` | bauen; prüfen, starten und (Produktion) die Git-Synchronisation einrichten |
+| `adm_03_git_push.sh` | sofort nach Git schieben und auf das Ergebnis warten (Produktion) |
+| `adm_99_destroy.sh` | schieben, dann Container, Volumes, lokale Images und das Instanzverzeichnis löschen |
 
 ## Umgebung (`.env`)
 
@@ -47,7 +52,7 @@ ist.
 | Eintrag | Vorgabe hier |
 |---|---|
 | `SECRET_GIT_TOKEN` | leer |
-| `ENV_GIT_URL`, `ENV_GIT_USERNAME`, `ENV_GIT_BRANCH` | Beispielwerte |
+| `ENV_GIT_URL`, `ENV_GIT_USERNAME`, `ENV_GIT_BRANCH`, `ENV_GIT_NAMESPACES` | nicht hier: in `docker-compose-production.yml` aus den Variablen `ifdd_wf_git_*` gesetzt; sie haben Vorrang vor gleichnamigen Einträgen in dieser Datei |
 | `ENV_IFDD_BE_URL` | `{{ cookiecutter.ifdd_be_url }}` |
 | `ENV_IFDD_OIDC_TOKEN_URL` | `{{ cookiecutter.ifdd_oidc_realm }}/protocol/openid-connect/token` |
 | `ENV_IFDD_API_CLIENT_ID` | `{{ cookiecutter.ifdd_keycloak_api_client_id }}` |

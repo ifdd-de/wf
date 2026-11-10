@@ -5,7 +5,7 @@
 
 The workflow service of an IFDD node: Kestra (open-source edition) with
 PostgreSQL runs flows, starts task containers, runs Jupyter notebooks with
-papermill and pushes the flows to a Git content repository. This chapter
+papermill and keeps its flows in a Git content repository. This chapter
 describes the instance `{{ cookiecutter.ifdd_wf_prj_slug }}`, generated from
 the template `ifdd-de/wf`, from the point of view of the people who set it
 up, build, run and secure it.
@@ -18,6 +18,7 @@ up, build, run and secure it.
 | Access | {% if sso %}login gate of the proxy (Keycloak group `{{ cookiecutter.ifdd_wf_sso_group }}`), then Kestra's own login{% else %}Kestra's own login only{% endif %} |
 | Backend for flows | `{{ cookiecutter.ifdd_be_url }}`, client `{{ cookiecutter.ifdd_keycloak_api_client_id }}` (read only) |
 | Development | `http://127.0.0.1:{{ cookiecutter.ifdd_wf_dev_port }}/` |
+| Content repository | `{{ cookiecutter.ifdd_wf_git_url }}`, branch `{{ cookiecutter.ifdd_wf_git_branch }}`, root namespaces `{{ cookiecutter.ifdd_wf_git_namespaces }}` (production) |
 
 ## What the instance contains
 
@@ -26,8 +27,10 @@ Two compose files; the Kestra image (`kestra/`: `Dockerfile`,
 Docker-in-Docker image (`dind/`){% endif %} and the papermill runner image
 (`runners/papermill/`), all built locally and with the CA certificates of
 `certs/` in their trust store; `.env` and `secrets/kestra.env` with generated
-values; example flows and notebooks; the scripts `adm_01_build.sh` and
-`adm_02_run.sh`.
+values; the flows of the Git synchronisation (`flows/system/`) and their
+helper `kestra/git_sync.py`; example flows and notebooks; the scripts
+`adm_01_build.sh`, `adm_02_run.sh`, `adm_03_git_push.sh` and
+`adm_99_destroy.sh`.
 
 ## Architecture
 
@@ -47,7 +50,8 @@ flowchart LR
   Kestra -->|host socket| Docker[host Docker] --> Tasks[task containers]
 {%- endif %}
   Tasks -->|"via proxy: be, Keycloak"| Proxy
-  Kestra -->|git push| Git[content repository]
+  Kestra -->|push, hourly| Git[content repository]
+  Git -->|restore at start| Kestra
 ```
 
 | Who | Uses wf for |

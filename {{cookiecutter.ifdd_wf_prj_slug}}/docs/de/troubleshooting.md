@@ -13,6 +13,8 @@ und den Executions in der Kestra-Oberfläche.
 | `adm_02_run.sh`: `placeholders <<generate:...>> left` | ein Wert wurde nicht erzeugt | ihn von Hand setzen, mit der Qualität, die der Platzhalter nennt |
 | `adm_02_run.sh`: `Docker network ... missing` | der Proxy läuft nicht | zuerst den Proxy starten |
 | `adm_02_run.sh`: `runner image ... missing` | die Images wurden nicht gebaut | `./adm_01_build.sh production` |
+| `adm_02_run.sh`: `SECRET_GIT_TOKEN is empty` | das Token des Inhalts-Repositorys fehlt | in `secrets/kestra.env` eintragen: `printf '%s' 'token' \| base64 -w0` |
+| `adm_02_run.sh`: `restore failed ... git_push NOT loaded` | die Wiederherstellung scheiterte: Token, Branch, Repository-URL oder ein Zertifikat | die Execution von `system.git_restore` in der Oberfläche öffnen, die Ursache beheben, erneut `./adm_02_run.sh production` |
 | Kestra steht minutenlang auf `starting` | Kestra lädt beim Start seine Plugins | warten; der Healthcheck lässt 120 s Zeit |
 | Kestra erreicht die Datenbank nach einer Änderung an `.env` nicht | die Datenbank behält das Passwort, mit dem sie angelegt wurde | das alte `IFDD_WF_DB_PASSWORD` wiederherstellen |
 | verschlüsselte Werte lassen sich nicht lesen | `IFDD_WF_ENCRYPTION_KEY` wurde geändert | den alten Schlüssel aus der Sicherung zurückholen |
@@ -37,4 +39,6 @@ und den Executions in der Kestra-Oberfläche.
 | ein Task-Container vertraut einem Zertifikat nicht | die CA liegt nicht in `certs/`, oder das Image wurde nicht neu gebaut | kopieren, `./adm_01_build.sh production` |
 | das Runner-Image wird in einem Task nicht gefunden | `pullPolicy: NEVER` und das Image ist nicht im Daemon | `./adm_02_run.sh production` lädt es |
 | ein importierter Flow aus Kestra 1.x wird abgewiesen | Task-Typen haben sich in Kestra 2.0 geändert (etwa `ForEach` -> `Loop`) | den Flow anpassen; siehe den Migrationsleitfaden von Kestra für 2.0 |
-| die Git-Synchronisation scheitert | Token, URL, Benutzer oder Branch in `secrets/kestra.env` falsch | die vier Einträge prüfen |
+| `system.git_push` scheitert | das Token ist abgelaufen oder darf nicht schreiben, der Branch fehlt, oder die Variablen `ifdd_wf_git_*` sind falsch | das Log der Execution nennt die Ursache; das Token in `secrets/kestra.env` erneuern und `./adm_02_run.sh production` |
+| ein Git-Task scheitert mit `could not be established because of SSL problems` | die CA des Git-Hosts oder eines TLS-prüfenden Proxys fehlt im Java-Trust-Store von Kestra | nach `certs/` kopieren, `./adm_01_build.sh production`, `./adm_02_run.sh production` |
+| ein gelöschter Kind-Namespace ist nach einem Neuaufbau wieder da | sein Ordner blieb in Git | den Ordner im Inhalts-Repository löschen |

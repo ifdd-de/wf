@@ -10,3 +10,7 @@ default_context:
   ifdd_wf_docker_volume_enabled: "n"
   ifdd_wf_enable_sso: "n"
   ifdd_proxy_network: edge-net
+  ifdd_wf_git_url: https://git.example.org:8443/grid/flows.git
+  ifdd_wf_git_username: grid-sync
+  ifdd_wf_git_branch: stage/int
+  ifdd_wf_git_namespaces: grid,ops.maintenance

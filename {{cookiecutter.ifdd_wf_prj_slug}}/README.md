@@ -8,13 +8,19 @@ Kestra {{ cookiecutter.ifdd_wf_kestra_image.split(":")[-1] }} (open-source editi
 
 ```bash
 cp <proxy instance>/certs/ca.crt certs/      # with the local CA of the proxy
-# fill in secrets/kestra.env (Git token and repository, client secret)
+# fill in secrets/kestra.env (Git token, client secret)
 ./adm_01_build.sh production
 ./adm_02_run.sh production
 ```
 
 Then log in{% if sso %} (Keycloak first, then{% else %} with{% endif %} `IFDD_WF_ADMIN_USER` and
 `IFDD_WF_ADMIN_PASSWORD` from `.env`{% if sso %}){% endif %}.
+
+In production the flows are kept in the content repository
+`{{ cookiecutter.ifdd_wf_git_url }}` (branch `{{ cookiecutter.ifdd_wf_git_branch }}`):
+`./adm_02_run.sh production` restores them into an empty Kestra and then
+pushes hourly, `./adm_03_git_push.sh` pushes at once, and
+`./adm_99_destroy.sh` pushes and then deletes the instance completely.
 
 ## Documentation
 

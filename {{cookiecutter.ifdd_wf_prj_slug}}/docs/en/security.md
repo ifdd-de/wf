@@ -49,7 +49,15 @@ every flow, root-equivalent control of the host.
 - The client `{{ cookiecutter.ifdd_keycloak_api_client_id }}` may only read.
   Its secret reaches a notebook as an environment variable, never as a
   papermill parameter: parameters are written into the executed notebook.
-- The Git token should have write access to the content repository only.
+- The Git token (`SECRET_GIT_TOKEN`) should only read and write the
+  contents of the content repository. Everyone who can edit flows can read
+  it.
+- The content repository holds every flow and namespace file, notebooks
+  included; keep it private.
+- Tasks that call Kestra's own API, such as the Git synchronisation, use
+  Kestra's login (`kestra.tasks.sdk.authentication` in
+  `kestra/application.yml`). Every flow can use it; that gives a flow author
+  nothing more, since all users share this one account anyway.
 
 ## Network and ports
 

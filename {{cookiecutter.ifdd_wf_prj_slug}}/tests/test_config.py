@@ -160,10 +160,6 @@ def test_example_flows():
     task = papermill["tasks"][0]
     assert task["taskRunner"]["pullPolicy"] == "NEVER", "local runner images cannot be pulled"
     assert task["containerImage"] == "{{ envs.runner_papermill_image }}"
-    sync = load("examples/flows/system_git_sync.yml")
-    inner = sync["tasks"][0]["tasks"][0]
-    assert inner["sourceOfTruth"] == "KESTRA"
-    assert inner["password"] == "{{ secret('GIT_TOKEN') }}"
 
 
 def test_backend_example_reaches_the_backend_and_keeps_the_secret_out():
@@ -211,3 +207,114 @@ def test_backend_notebook_has_parameters_and_reads_the_environment():
     for name in ("IFDD_BE_URL", "IFDD_OIDC_TOKEN_URL", "IFDD_API_CLIENT_ID", "IFDD_API_CLIENT_SECRET"):
         assert f'setting("{name}")' in code
     assert all(not c.get("outputs") for c in cells if c["cell_type"] == "code"), "commit the notebook without outputs"
+
+
+# --- Git synchronisation (flows/system/, kestra/git_sync.py) ---------------
+
+GIT_ENV = ("ENV_GIT_URL", "ENV_GIT_USERNAME", "ENV_GIT_BRANCH", "ENV_GIT_NAMESPACES")
+
+
+def git_tasks(flow):
+    """Every NamespaceSync/Clone task of a flow, also inside Loop and WorkingDirectory."""
+    found = []
+
+    def walk(tasks):
+        for task in tasks:
+            if task["type"].startswith("io.kestra.plugin.git."):
+                found.append(task)
+            walk(task.get("tasks", []))
+
+    walk(flow["tasks"])
+    return found
+
+
+def test_git_flows_use_the_configured_repository_and_the_token():
+    for name in ("git_push", "git_restore"):
+        flow = load(f"flows/system/{name}.yml")
+        assert flow["id"] == name and flow["namespace"] == "system"
+        tasks = git_tasks(flow)
+        assert tasks, name
+        for task in tasks:
+            assert task["url"] == "{{ envs.git_url }}"
+            assert task["username"] == "{{ envs.git_username }}"
+            assert task["password"] == "{{ secret('GIT_TOKEN') }}"
+            assert task["branch"] == "{{ envs.git_branch }}"
+
+
+def test_git_push_mirrors_kestra_without_touching_system():
+    flow = load("flows/system/git_push.yml")
+    assert flow["concurrency"]["limit"] == 1, "a scheduled and a manual push must not overlap"
+    loop = flow["tasks"][0]
+    assert loop["values"] == "{{ envs.git_namespaces | split(',') }}"
+    (sync,) = git_tasks(flow)
+    assert sync["type"] == "io.kestra.plugin.git.NamespaceSync"
+    assert sync["sourceOfTruth"] == "KESTRA"
+    assert sync["whenMissingInSource"] == "DELETE"
+    assert sync["includeChildNamespaces"] is True
+    assert sync["protectedNamespaces"] == ["system"]
+
+
+def test_git_restore_restores_each_namespace_on_its_own():
+    # The open-source edition cannot create a namespace through its API, so a
+    # restore with includeChildNamespaces skips missing child namespaces.
+    flow = load("flows/system/git_restore.yml")
+    assert [i["id"] for i in flow["inputs"]] == ["namespace"]
+    sync = next(t for t in git_tasks(flow) if t["type"] == "io.kestra.plugin.git.NamespaceSync")
+    assert sync["sourceOfTruth"] == "GIT"
+    assert sync["includeChildNamespaces"] is False
+    assert sync["whenMissingInSource"] == "KEEP"
+    assert flow["tasks"][1]["values"] == "{{ outputs.list.vars.namespaces }}"
+
+
+def test_git_settings_reach_kestra_in_production_only():
+    production = compose("production")["services"]["kestra"]
+    for name in GIT_ENV:
+        assert production["environment"][name], name
+    assert "./flows/system:/etc/kestra/system-flows:ro" in production["volumes"]
+    assert "./kestra/git_sync.py:/etc/kestra/git_sync.py:ro" in production["volumes"]
+    development = compose("development")["services"]["kestra"]
+    assert not set(GIT_ENV) & set(development["environment"])
+    assert not any("system-flows" in v for v in development["volumes"])
+
+
+def test_kestra_env_holds_the_git_token():
+    # secrets/ is on the skip list: an updated instance keeps its old
+    # kestra.env.dist, so only the entry both versions share is checked.
+    assert env_file("secrets/kestra.env.dist")["SECRET_GIT_TOKEN"] == ""
+
+
+def test_tasks_call_the_api_on_localhost_with_kestras_login():
+    # NamespaceSync calls Kestra's API; kestra.url is the public URL behind the proxy.
+    auth = load("kestra/application.yml")["kestra"]["tasks"]["sdk"]["authentication"]
+    assert auth["url"] == "http://localhost:8080"
+    assert auth["username"] == "${IFDD_WF_ADMIN_USER}"
+    assert auth["password"] == "${IFDD_WF_ADMIN_PASSWORD}"
+
+
+def test_kestra_image_trusts_certs_in_java_before_they_are_removed():
+    dockerfile = (ROOT / "kestra/Dockerfile").read_text()
+    java = dockerfile.index("ifdd-install-java-certs /tmp/ifdd-certs")
+    system = dockerfile.index("ifdd-install-certs /tmp/ifdd-certs")
+    assert java < system, "install-certs.sh removes the directory"
+
+
+def test_adm_scripts_parse():
+    import subprocess
+
+    for script in ("adm_01_build.sh", "adm_02_run.sh", "adm_03_git_push.sh", "adm_99_destroy.sh"):
+        path = ROOT / script
+        assert path.stat().st_mode & 0o111, f"{script} is not executable"
+        subprocess.run(["bash", "-n", str(path)], check=True)
+
+
+def test_adm_02_refuses_production_without_token_and_sets_up_the_sync():
+    script = (ROOT / "adm_02_run.sh").read_text()
+    assert "^SECRET_GIT_TOKEN=.+" in script
+    assert "git_sync.py bootstrap" in script
+
+
+def test_destroy_pushes_first_and_needs_confirmation():
+    script = (ROOT / "adm_99_destroy.sh").read_text()
+    assert script.startswith("#!/usr/bin/env bash")
+    assert script.index("./adm_03_git_push.sh") < script.index("down --volumes") < script.index('rm -rf -- "$DIR"')
+    assert '[ "$answer" = destroy ]' in script

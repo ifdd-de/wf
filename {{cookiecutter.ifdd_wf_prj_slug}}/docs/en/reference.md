@@ -18,12 +18,17 @@ variable.
 | `dind/` | Docker-in-Docker image for task containers |
 {%- endif %}
 | `runners/papermill/` | local runner image for notebooks |
+| `flows/system/` | `git_push.yml` and `git_restore.yml`, the flows of the Git synchronisation (namespace `system`) |
+| `kestra/git_sync.py` | loads those flows, restores, pushes; run inside the Kestra container by the scripts |
 | `build/install-certs.sh` | adds `certs/*` to the trust store of every image |
+| `build/install-java-certs.sh` | adds `certs/*` to the Java trust store of the Kestra image |
 | `certs/` | internal CA certificates (git-ignored) |
 | `secrets/kestra.env` | flow secrets and flow variables (git-ignored) |
 | `.env` | host, ports, generated passwords and keys (git-ignored) |
-| `examples/` | Git sync flow, papermill flow, backend example flow and notebooks |
-| `adm_01_build.sh`, `adm_02_run.sh` | build; check and start |
+| `examples/` | papermill flow, backend example flow and notebooks |
+| `adm_01_build.sh`, `adm_02_run.sh` | build; check, start and (production) set up the Git synchronisation |
+| `adm_03_git_push.sh` | push to Git now and wait for the result (production) |
+| `adm_99_destroy.sh` | push, then delete containers, volumes, local images and the instance directory |
 
 ## Environment (`.env`)
 
@@ -47,7 +52,7 @@ variable.
 | Entry | Default here |
 |---|---|
 | `SECRET_GIT_TOKEN` | empty |
-| `ENV_GIT_URL`, `ENV_GIT_USERNAME`, `ENV_GIT_BRANCH` | example values |
+| `ENV_GIT_URL`, `ENV_GIT_USERNAME`, `ENV_GIT_BRANCH`, `ENV_GIT_NAMESPACES` | not here: set in `docker-compose-production.yml` from the variables `ifdd_wf_git_*`; they win over entries of the same name in this file |
 | `ENV_IFDD_BE_URL` | `{{ cookiecutter.ifdd_be_url }}` |
 | `ENV_IFDD_OIDC_TOKEN_URL` | `{{ cookiecutter.ifdd_oidc_realm }}/protocol/openid-connect/token` |
 | `ENV_IFDD_API_CLIENT_ID` | `{{ cookiecutter.ifdd_keycloak_api_client_id }}` |
