@@ -34,24 +34,40 @@ helper `kestra/git_sync.py`; example flows and notebooks; the scripts
 
 ## Architecture
 
-```{mermaid}
-flowchart LR
+```{uml}
+@startuml
+left to right direction
 {%- if sso %}
-  Browser -->|HTTPS| Proxy[proxy: Traefik] -->|forwardAuth| OAuth2[oauth2-proxy]
+  rectangle "Browser" as Browser
+  rectangle "proxy: Traefik" as Proxy
+  rectangle "oauth2-proxy" as OAuth2
+  Browser --> Proxy : HTTPS
+  Proxy --> OAuth2 : forwardAuth
 {%- else %}
-  Browser -->|HTTPS| Proxy[proxy: Traefik]
+  rectangle "Browser" as Browser
+  rectangle "proxy: Traefik" as Proxy
+  Browser --> Proxy : HTTPS
 {%- endif %}
-  Proxy --> Kestra[kestra]
-  Kestra -->|db network| PG[(PostgreSQL)]
+  rectangle "kestra" as Kestra
+  Proxy --> Kestra
+  database "PostgreSQL" as PG
+  Kestra --> PG : db network
 {%- if dind %}
-  Kestra -->|socket volume| DinD[dind: Docker daemon]
-  DinD --> Tasks[task containers]
+  rectangle "dind: Docker daemon" as DinD
+  Kestra --> DinD : socket volume
+  rectangle "task containers" as Tasks
+  DinD --> Tasks
 {%- else %}
-  Kestra -->|host socket| Docker[host Docker] --> Tasks[task containers]
+  rectangle "host Docker" as Docker
+  rectangle "task containers" as Tasks
+  Kestra --> Docker : host socket
+  Docker --> Tasks
 {%- endif %}
-  Tasks -->|"via proxy: be, Keycloak"| Proxy
-  Kestra -->|push, hourly| Git[content repository]
-  Git -->|restore at start| Kestra
+  Tasks --> Proxy : via proxy: be, Keycloak
+  rectangle "content repository" as Git
+  Kestra --> Git : push, hourly
+  Git --> Kestra : restore at start
+@enduml
 ```
 
 | Who | Uses wf for |
