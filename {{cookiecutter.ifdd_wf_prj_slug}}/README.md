@@ -34,24 +34,12 @@ The pages are Sphinx sources in MyST Markdown, meant to be copied into a
 documentation project that covers all services; GitHub shows them as plain
 Markdown.
 
-## Honesty notes
+## AI assistance
 
-The Dockerfiles were not built while writing the template (no Docker in that
-environment). See the template README for what was verified, and the notes marked
-"Not tested" in the documentation.
-
-Backend example (2026-10-09): the notebook ran with papermill 2.7.0 against a
-real ifdd-be (be-core with PostgreSQL 18.4) and Keycloak 26.8.0 (template
-realm, client `ifdd-api-script`): 7 products, 3 locations; a wrong secret,
-a missing variable, an unknown segment and a client without read access
-end with a clear message; over HTTPS it needs `REQUESTS_CA_BUNDLE` with the
-local CA and then works. Kestra 2.0.4 (release binary, plugin-script-python
-1.14.0) validated both example flows and refused a misspelt `networkMode`;
-the flow ran in Kestra with the Process task runner instead of Docker
-(`envs.*`, `secret()`, namespace file, output files `count.json` and
-`executed.ipynb`), and the secret appeared neither in the logs nor in the
-output files. Not verified: the Docker task runner, `networkMode`, and
-name resolution inside DinD (no Docker).
+Some parts of the template `ifdd-de/wf` this instance was generated
+from, in particular the tests, the test data and the documentation, were
+developed or improved with the help of large language models (LLMs). All
+changes were reviewed and released by the maintainer.
 
 ## License
 

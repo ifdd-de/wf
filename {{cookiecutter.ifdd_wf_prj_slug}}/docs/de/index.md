@@ -34,24 +34,40 @@ Skripte `adm_01_build.sh`, `adm_02_run.sh`, `adm_03_git_push.sh` und
 
 ## Architektur
 
-```{mermaid}
-flowchart LR
+```{uml}
+@startuml
+left to right direction
 {%- if sso %}
-  Browser -->|HTTPS| Proxy[proxy: Traefik] -->|forwardAuth| OAuth2[oauth2-proxy]
+  rectangle "Browser" as Browser
+  rectangle "proxy: Traefik" as Proxy
+  rectangle "oauth2-proxy" as OAuth2
+  Browser --> Proxy : HTTPS
+  Proxy --> OAuth2 : forwardAuth
 {%- else %}
-  Browser -->|HTTPS| Proxy[proxy: Traefik]
+  rectangle "Browser" as Browser
+  rectangle "proxy: Traefik" as Proxy
+  Browser --> Proxy : HTTPS
 {%- endif %}
-  Proxy --> Kestra[kestra]
-  Kestra -->|Netz db| PG[(PostgreSQL)]
+  rectangle "kestra" as Kestra
+  Proxy --> Kestra
+  database "PostgreSQL" as PG
+  Kestra --> PG : Netz db
 {%- if dind %}
-  Kestra -->|Socket-Volume| DinD[dind: Docker-Daemon]
-  DinD --> Tasks[Task-Container]
+  rectangle "dind: Docker-Daemon" as DinD
+  Kestra --> DinD : Socket-Volume
+  rectangle "Task-Container" as Tasks
+  DinD --> Tasks
 {%- else %}
-  Kestra -->|Host-Socket| Docker[Docker des Hosts] --> Tasks[Task-Container]
+  rectangle "Docker des Hosts" as Docker
+  rectangle "Task-Container" as Tasks
+  Kestra --> Docker : Host-Socket
+  Docker --> Tasks
 {%- endif %}
-  Tasks -->|"über den Proxy: be, Keycloak"| Proxy
-  Kestra -->|Push, stündlich| Git[Inhalts-Repository]
-  Git -->|Restore beim Start| Kestra
+  Tasks --> Proxy : über den Proxy: be, Keycloak
+  rectangle "Inhalts-Repository" as Git
+  Kestra --> Git : Push, stündlich
+  Git --> Kestra : Restore beim Start
+@enduml
 ```
 
 | Wer | Nutzt wf für |

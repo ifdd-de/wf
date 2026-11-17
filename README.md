@@ -71,7 +71,8 @@ of the build context.
 
 The pages have no `conf.py` of their own: they are meant to be copied into a
 Sphinx project that documents all services. That project needs `myst_parser`
-and `sphinxcontrib.mermaid`. Labels start with `ifdd-wf-`; references to
+and `sphinxcontrib.plantuml` (PlantUML with Java and Graphviz).
+Labels start with `ifdd-wf-`; references to
 `ifdd-instances-wf` (the instance chapter of the meta repository) resolve
 only there.
 
@@ -90,6 +91,14 @@ reference to an own label resolvable, and a Sphinx build of each language
 with `-W` (configuration `tests/docs/conf.py`, versions
 `tests/docs/requirements.txt`).
 
+The check runs PlantUML, so it needs Java and Graphviz.
+`tests/docs/get_plantuml.sh` downloads the pinned PlantUML jar into the user
+cache, checks its SHA-256 and prints its path:
+
+```bash
+export IFDD_PLANTUML_JAR="$(tests/docs/get_plantuml.sh)"
+```
+
 ## Requirements on the proxy
 
 With `ifdd_wf_enable_sso=y` the proxy instance needs
@@ -106,8 +115,7 @@ this template) and a Keycloak client; see the proxy README, "oauth2-proxy".
 - `template-update-test.yml`: generates from the most recent tag and applies
   the current state with `cruft update`.
 
-Not in CI (yet): building the images and starting the stack. See "Honesty
-notes".
+Not in CI (yet): building the images and starting the stack.
 
 ## Security notes
 
@@ -127,56 +135,8 @@ notes".
 - The management port 8081 (health, metrics, unauthenticated) is never
   published.
 
-## Honesty notes
+## AI assistance
 
-Documentation `docs/` (2026-10-13): rendered with cookiecutter 2.7.1 for
-both fixtures and with the `cookiecutter_all.yaml` of the meta repository;
-`tests/check_docs.py` passes for each (Sphinx 9.1.0, myst-parser 5.1.0,
-sphinxcontrib-mermaid 2.1.1, Python 3.13), the placeholder check finds
-nothing and the instance tests pass. The workflow file passes actionlint
-1.7.12; the workflow itself has not run. Content: taken from the previous
-instance README, this README, the compose files, `dotenv.dist`,
-`secrets/kestra.env.dist` and the scripts. Also checked (2026-10-13): one
-Sphinx project per language with the pages of all ten service templates (rendered
-with `cookiecutter_all.yaml`), the instance chapter of the meta repository
-and ifdd-be-core with its OpenAPI document builds with `-W` and no
-suppressed warnings, so every cross reference resolves; the Mermaid diagrams
-of all services, and of the option variants of the fixtures, render in
-headless Chromium 141.0.7390.37 (Playwright 1.56.0, Mermaid 11.12.1 served
-locally).
-
-Backend example (2026-10-09), see the instance README: notebook against a
-real ifdd-be and Keycloak 26.8.0; both example flows validated by Kestra
-2.0.4 (Java 25, plugin-script-python 1.14.0); the new flow ran in Kestra with
-the Process runner instead of Docker. The new instance tests fail against the
-previous template. Not verified: Docker task runner, `networkMode`, name
-resolution inside DinD.
-
-Verified while building 26.10.1 (no Docker available in the build
-environment):
-
-- Kestra 2.0.4 (release binary, Java 25, PostgreSQL 16) with the rendered
-  `kestra/application.yml`: `${...}` resolution, basic authentication, the
-  context-path finding above (API part), `SECRET_*`/`ENV_*` in flows, both example flows
-  validated, `system_git_sync.yml` pushed a flow to a local Git repository.
-- oauth2-proxy 7.15.5 with the environment of the rendered proxy compose
-  file, Traefik 3.7.13 with routers equal to this template's labels and a
-  simulated Keycloak: browser redirected to the realm, PKCE, callback on
-  `/oauth2/callback`, group member let through, non-member 403.
-- The example notebook with the pinned papermill stack (Python 3.12).
-
-Not verified: the three Dockerfiles (no Docker); in particular whether the
-Kestra 2.0.4 image has pip in `/app/.venv` (the Dockerfile falls back to uv
-and ensurepip and fails loudly otherwise), DinD and the image load into it,
-name resolution from task containers inside DinD, and the Python version of
-the Kestra image.
-
-Healthcheck of `kestra` and removal of the path (2026-10-05): the endpoint
-`/health` on the management port 8081 comes from Kestra's default
-configuration (`cli/src/main/resources/application.yml`, tag `v2.0.4`); in a
-running instance `curl` exists in the image (neither `wget` nor `bash`) and
-`http://localhost:8081/health` answered 200 (checked by the maintainer). The
-login failure under a path was observed in a running instance. Rendering with
-cookiecutter 2.7.1, the instance tests (the new ones fail against the previous
-template) and `docker compose config` (Compose v5.5.1) were run; the
-healthcheck itself was not run in Docker.
+Some parts of this repository, in particular the tests, the test data and the
+documentation, were developed or improved with the help of large language
+models (LLMs). All changes were reviewed and released by the maintainer.
