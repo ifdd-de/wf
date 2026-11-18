@@ -40,5 +40,6 @@ the executions in the Kestra UI.
 | the runner image is not found in a task | `pullPolicy: NEVER` and the image is not in the daemon | `./adm_02_run.sh production` loads it |
 | an imported flow of Kestra 1.x is refused | task types changed in Kestra 2.0 (for example `ForEach` -> `Loop`) | adapt the flow; see the Kestra migration guide for 2.0 |
 | `system.git_push` fails | the token expired or may not write, the branch is missing, or the variables `ifdd_wf_git_*` are wrong | the execution log names the cause; renew the token in `secrets/kestra.env` and run `./adm_02_run.sh production` |
+| a Git task fails with `unrecognized_name` | the Git host has a name without a dot: Java sends no server name for it, and the proxy refuses the handshake (`sniStrict`) | give the Git host a name with a dot, set `ifdd_wf_git_url` with `cruft update --variables-to-update`, `./adm_02_run.sh production` |
 | a Git task fails with `could not be established because of SSL problems` | the CA of the Git host, or of a TLS-inspecting proxy, is not in the Java trust store of Kestra | copy it into `certs/`, `./adm_01_build.sh production`, `./adm_02_run.sh production` |
 | a deleted child namespace is back after a rebuild | its folder stayed in Git | delete the folder in the content repository |

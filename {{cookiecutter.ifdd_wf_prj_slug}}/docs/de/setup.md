@@ -8,6 +8,7 @@
 | Was | Warum |
 |---|---|
 | Docker mit Compose | Kestra, PostgreSQL{% if dind %}, der Docker-in-Docker-Daemon{% endif %} und die Runner laufen als Container; die Images werden lokal gebaut |
+| etwa 10 GB freier Plattenplatz, beim Bauen mehr | das aus `{{ cookiecutter.ifdd_wf_kestra_image }}` gebaute Kestra-Image belegt etwa 9 GB, wenn das ein volles Image mit allen Plugins ist (der Default) |
 | das externe Netz `{{ cookiecutter.ifdd_proxy_network }}` und eine laufende Proxy-Instanz | Traefik routet `IFDD_WF_HOST` zu Kestra; Task-Container erreichen darüber die anderen Dienste |
 {%- if sso %}
 | das Login-Gate des Proxys (`ifdd_proxy_enable_oauth2_proxy=y`) mit der Redirect-URI `https://<IFDD_WF_HOST>/oauth2/callback` in seinem Client | jede Anfrage geht durch oauth2-proxy |
@@ -15,6 +16,7 @@
 {%- endif %}
 | das CA-Zertifikat des Proxys, wenn er eine eigene CA nutzt | es wird in die Images gebaut |
 | ein Git-Inhalts-Repository mit dem Branch `{{ cookiecutter.ifdd_wf_git_branch }}` (ein Branch je Instanz, etwa je Stage) und ein Token, das nur dessen Inhalte lesen und schreiben darf | die Flows werden dorthin geschoben und von dort wiederhergestellt (Produktion) |
+| ein Hostname mit Punkt für den Git-Server, etwa `git.example.org` | Kestras Git-Client (Java) sendet für Namen ohne Punkt keinen Servernamen, und der Proxy weist solche Handshakes in Produktion ab (`sniStrict`) |
 
 ## Instanz anlegen
 
