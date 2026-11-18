@@ -2,6 +2,19 @@
 
 The version scheme follows the other IFDD templates: `YY.MM.N`.
 
+## [26.11.2] - 2026-11-18
+
+- License holder as in the other repositories: Markus Leist
+  (markus@lei.st).
+- The Git server needs a host name with a dot: Kestra's Git client (Java)
+  sends no server name for short names, and the proxy refuses such
+  handshakes in production (`sniStrict`). README, setup and troubleshooting
+  pages (en, de). Found by the integration run of `ifdd-de/meta`
+  (`unrecognized_name`).
+- Disk space: README section and a row in the prerequisites of the setup
+  page (en, de); the Kestra image built from the full upstream image took
+  9.17 GB in that run.
+
 ## [26.11.1] - 2026-11-14
 
 - The router of the login callback names the Traefik service of oauth2-proxy

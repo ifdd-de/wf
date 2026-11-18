@@ -31,7 +31,7 @@ generated secrets and the certificates out of every later `cruft update`.
 | `ifdd_wf_entrypoint` | `websecure` | Traefik entry point of the routers |
 | `ifdd_wf_dev_port` | `8095` | loopback port of the development compose file |
 | `ifdd_wf_admin_email` | `admin@example.org` | user name of Kestra's basic authentication (Kestra requires an email address) |
-| `ifdd_wf_kestra_image` | `kestra/kestra:v2.0.8` | upstream image (full image, with plugins) |
+| `ifdd_wf_kestra_image` | `kestra/kestra:v2.0.8` | upstream image (full image, with all plugins; the image built from it was 9.2 GB on disk, see "Disk space") |
 | `ifdd_wf_postgres_image` | `postgres:18` | database image |
 | `ifdd_wf_docker_mode` | `dind` | `dind`: own privileged Docker daemon, socket shared by volume, no TCP; `socket`: host's `/var/run/docker.sock` |
 | `ifdd_wf_dind_image` | `docker:29.9.2-dind` | DinD image |
@@ -42,7 +42,7 @@ generated secrets and the certificates out of every later `cruft update`.
 | `ifdd_wf_sso_auth_address` | `http://oauth2-proxy:4180` | oauth2-proxy as seen from Traefik |
 | `ifdd_proxy_oauth2_proxy_service` | `ifdd_proxy-oauth2-proxy` | **shared** with `ifdd-de/proxy`: its Traefik service of oauth2-proxy, without `@docker`; the router of the login callback names `<value>@docker`. The default is the name of a proxy with the default project name |
 | `ifdd_wf_sso_service` | `oauth2-proxy@docker` | deprecated: a value other than this default still names the service of the login callback (the pre-generation hook warns); leave the default and set `ifdd_proxy_oauth2_proxy_service` |
-| `ifdd_wf_git_url` | `https://git.example.org/example/wf-content.git` | content repository of the flows (HTTPS, no credentials; the token goes into `secrets/kestra.env`) |
+| `ifdd_wf_git_url` | `https://git.example.org/example/wf-content.git` | content repository of the flows (HTTPS, no credentials; the token goes into `secrets/kestra.env`). The host needs a name with a dot: Kestra's Git client (Java) sends no server name for short names, and the proxy refuses those handshakes in production |
 | `ifdd_wf_git_username` | `git` | user name sent with the token |
 | `ifdd_wf_git_branch` | `main` | branch of this instance, for example one per stage; must exist |
 | `ifdd_wf_git_namespaces` | `ifdd` | root namespaces to synchronise, comma-separated, each with its child namespaces |
@@ -98,6 +98,16 @@ cache, checks its SHA-256 and prints its path:
 ```bash
 export IFDD_PLANTUML_JAR="$(tests/docs/get_plantuml.sh)"
 ```
+
+## Disk space
+
+The Kestra image of an instance is large: built from `kestra/kestra:v2.0.8`
+with the Python packages of `kestra/requirements.txt`, it took 9.17 GB on
+disk (integration run of `ifdd-de/meta` on a GitHub runner, 2026-11-18); the
+build cache adds several GB until `docker builder prune`. Kestra also
+publishes slim images without plugins (`kestra/kestra:v<version>-slim`); the
+template does not use them, because flows need at least the Git and script
+plugins and own flows may need more.
 
 ## Requirements on the proxy
 
