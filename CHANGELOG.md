@@ -2,6 +2,12 @@
 
 The version scheme follows the other IFDD templates: `YY.MM.N`.
 
+## [Unreleased]
+
+- CI: GitHub Actions pinned to commit SHAs (version as comment),
+  `persist-credentials: false` on every checkout; the same in the workflows of
+  the instance.
+
 ## [26.11.2] - 2026-11-18
 
 - License holder as in the other repositories: Markus Leist
