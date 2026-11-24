@@ -2,8 +2,18 @@
 
 The version scheme follows the other IFDD templates: `YY.MM.N`.
 
-## [Unreleased]
+## [26.11.11] - 2026-11-24
 
+- Version aligned across all ifdd-de repositories (26.11.11).
+- Upstream images: `ifdd_wf_kestra_image` v2.0.8 -> v2.0.12,
+  `ifdd_wf_dind_image` 29.9.2 -> 29.10.0 (`-dind`),
+  `ifdd_wf_runner_python_image` `python:3.14-slim` -> `python:3.15-slim`.
+- Pinned packages of the Kestra image and of the papermill runner: pandas
+  3.1.0 -> 3.1.1, SQLAlchemy 2.1.6 -> 2.1.9.
+- Checked outside the CI: the runner packages install from wheels only on
+  Python 3.15.2, and papermill runs `examples/notebooks/example.ipynb` there.
+  Not repeated with Kestra 2.0.12: the observations of the documentation
+  (git restore, namespaces) were made with 2.0.8 and say so.
 - CI: GitHub Actions pinned to commit SHAs (version as comment),
   `persist-credentials: false` on every checkout; the same in the workflows of
   the instance.
